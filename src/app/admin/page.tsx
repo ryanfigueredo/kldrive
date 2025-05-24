@@ -3,6 +3,20 @@
 import { useEffect, useState } from "react";
 import { DateSelector } from "@/components/DateSelector";
 import { useSession } from "next-auth/react";
+
+declare module "next-auth" {
+  interface User {
+    role?: string;
+  }
+  interface Session {
+    user: {
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      role?: string;
+    };
+  }
+}
 import { useRouter } from "next/navigation";
 import Chart from "@/components/Chart";
 import Image from "next/image";
@@ -43,14 +57,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
-      return;
-    }
-
-    if (
-      session?.user?.email &&
-      !session.user.email.includes("@klfacilities.com.br")
-    ) {
-      alert("Acesso restrito.");
+    } else if (session?.user?.role !== "ADMIN") {
+      alert("Acesso restrito ao administrador.");
       router.push("/");
     }
   }, [status, session, router]);
