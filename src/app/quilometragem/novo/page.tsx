@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface KmRecord {
   id: string;
@@ -34,7 +35,6 @@ export default function Dashboard() {
   const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
 
   useEffect(() => {
-    // Histórico
     fetch("/api/historico")
       .then((res) => res.json())
       .then((data) => {
@@ -46,7 +46,6 @@ export default function Dashboard() {
         setFuelRecords([]);
       });
 
-    // Veículo atual
     const vehicleId = localStorage.getItem("veiculoSelecionado");
     if (vehicleId) {
       fetch(`/api/veiculos/${vehicleId}`)
@@ -58,7 +57,9 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen px-4 py-6 bg-dark">
-      <h1 className="text-xl font-bold mb-1">Bem-vindo à KL Drive</h1>
+      <h1 className="text-xl font-bold mb-1 text-white">
+        Bem-vindo à KL Drive
+      </h1>
 
       {vehicleInfo ? (
         <p className="text-sm text-gray-600 mb-4">
@@ -84,7 +85,9 @@ export default function Dashboard() {
       </div>
 
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-2">Últimas Quilometragens</h2>
+        <h2 className="text-lg font-semibold mb-2 text-white">
+          Últimas Quilometragens
+        </h2>
         <div className="flex flex-col gap-3">
           {Array.isArray(kmRecords) && kmRecords.length > 0 ? (
             kmRecords.map((r) => (
@@ -117,7 +120,9 @@ export default function Dashboard() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-2">Últimos Abastecimentos</h2>
+        <h2 className="text-lg font-semibold mb-2 text-white">
+          Últimos Abastecimentos
+        </h2>
         <div className="flex flex-col gap-3">
           {Array.isArray(fuelRecords) && fuelRecords.length > 0 ? (
             fuelRecords.map((r) => (
@@ -125,9 +130,11 @@ export default function Dashboard() {
                 key={r.id}
                 className="bg-white p-3 rounded-xl shadow-md flex gap-4 items-center"
               >
-                <img
+                <Image
                   src={r.photoUrl}
                   alt="Cupom"
+                  width={80}
+                  height={80}
                   className="w-20 h-20 object-cover rounded-lg"
                 />
                 <div className="text-sm text-gray-800">

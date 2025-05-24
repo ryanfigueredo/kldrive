@@ -3,6 +3,13 @@
 import ImageUpload from "@/components/ImageUpload";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function NovoAbastecimento() {
   const [litros, setLitros] = useState("");
@@ -62,7 +69,7 @@ export default function NovoAbastecimento() {
           placeholder="Litros abastecidos"
           value={litros}
           onChange={(e) => setLitros(e.target.value)}
-          className="border rounded-lg p-3 w-full"
+          className="border rounded-lg p-3 w-full text-black"
         />
 
         <input
@@ -70,25 +77,26 @@ export default function NovoAbastecimento() {
           placeholder="Valor total (R$)"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
-          className="border rounded-lg p-3 w-full"
+          className="border rounded-lg p-3 w-full text-black"
         />
 
-        <select
-          value={situacao}
-          onChange={(e) => setSituacao(e.target.value)}
-          className="border rounded-lg p-3 w-full"
-        >
-          <option value="CHEIO">Tanque cheio</option>
-          <option value="MEIO_TANQUE">Meio tanque</option>
-          <option value="QUASE_VAZIO">Quase vazio</option>
-        </select>
+        <Select value={situacao} onValueChange={setSituacao}>
+          <SelectTrigger className="text-white">
+            <SelectValue placeholder="Situação do tanque" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="CHEIO">Tanque cheio</SelectItem>
+            <SelectItem value="MEIO_TANQUE">Meio tanque</SelectItem>
+            <SelectItem value="QUASE_VAZIO">Quase vazio</SelectItem>
+          </SelectContent>
+        </Select>
 
         <input
           type="number"
           placeholder="Quilometragem atual"
           value={kmAtual}
           onChange={(e) => setKmAtual(e.target.value)}
-          className="border rounded-lg p-3 w-full"
+          className="border rounded-lg p-3 w-full text-black"
         />
 
         <textarea
@@ -101,7 +109,7 @@ export default function NovoAbastecimento() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-violet-600 text-white py-3 rounded-xl hover:bg-violet-700 transition disabled:opacity-50"
+          className="bg-primary  py-3 rounded-xl hover:bg-violet-700 transition disabled:opacity-50"
         >
           {loading ? "Enviando..." : "Registrar"}
         </button>
