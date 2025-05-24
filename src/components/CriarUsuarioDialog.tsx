@@ -38,6 +38,7 @@ export function CriarUsuarioDialog({
   const [role, setRole] = useState<Role>("COLABORADOR");
   const [vehicleId, setVehicleId] = useState<string>("");
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/veiculos")
@@ -47,24 +48,37 @@ export function CriarUsuarioDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
 
-    const res = await fetch("/api/admin/usuarios", {
-      method: "POST",
-      body: JSON.stringify({ name, email, role, vehicleId }),
-      headers: { "Content-Type": "application/json" },
-    });
+    try {
+      const res = await fetch("/api/admin/usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, role, vehicleId }),
+      });
 
-    if (res.ok) {
-      setOpen(false);
-      setName("");
-      setEmail("");
-      setRole("COLABORADOR");
-      setVehicleId("");
-      onUserCreated?.();
-      alert("Usuário criado com sucesso!");
-    } else {
-      const error = await res.json();
-      alert(error.error || "Erro ao criar usuário.");
+      if (res.ok) {
+        alert("Usuário criado com sucesso!");
+        setOpen(false); // fecha o modal
+        setName("");
+        setEmail("");
+        setRole("COLABORADOR");
+        setVehicleId("");
+        if (onUserCreated) onUserCreated();
+      } else {
+        let errorMessage = "Erro ao criar usuário.";
+        try {
+          const data = await res.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // resposta vazia ou inválida
+        }
+        alert(errorMessage);
+      }
+    } catch {
+      alert("Erro inesperado ao criar usuário.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -84,6 +98,7 @@ export function CriarUsuarioDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
 
@@ -93,12 +108,18 @@ export function CriarUsuarioDialog({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
+              type="email"
             />
           </div>
 
           <div>
             <Label>Cargo</Label>
-            <Select value={role} onValueChange={(val) => setRole(val as Role)}>
+            <Select
+              value={role}
+              onValueChange={(val) => setRole(val as Role)}
+              disabled={loading}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecione o cargo" />
               </SelectTrigger>
@@ -115,6 +136,7 @@ export function CriarUsuarioDialog({
             <Select
               value={vehicleId}
               onValueChange={(val) => setVehicleId(val)}
+              disabled={loading}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecione o veículo" />
@@ -130,7 +152,9 @@ export function CriarUsuarioDialog({
           </div>
 
           <DialogFooter>
-            <Button type="submit">Salvar</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
