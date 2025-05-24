@@ -34,13 +34,13 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
+      <Card className="bg-white text-black shadow-sm rounded-lg ">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="email">E-mail corporativo</Label>
+            <Label htmlFor="email">E-mail</Label>
             <Input
               id="email"
               type="email"
