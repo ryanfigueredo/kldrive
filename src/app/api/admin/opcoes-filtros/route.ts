@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 
-export default async function handler(_: NextApiRequest, res: NextApiResponse) {
+export async function GET() {
   const [veiculos, usuarios] = await Promise.all([
     prisma.vehicle.findMany({
       select: { id: true, placa: true },
@@ -13,5 +13,5 @@ export default async function handler(_: NextApiRequest, res: NextApiResponse) {
     }),
   ]);
 
-  res.status(200).json({ veiculos, usuarios });
+  return NextResponse.json({ veiculos, usuarios });
 }

@@ -1,17 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export async function GET(req: NextRequest) {
   const token = await getToken({ req });
-  if (!token) return res.status(401).json({ error: "Não autenticado" });
+  if (!token)
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  const tipo = req.query.tipo as string | undefined;
+  const { searchParams } = new URL(req.url);
+  const tipo = searchParams.get("tipo");
 
-  type RegistroResponse = {
+  const registros: {
     id: string;
     tipo: "KM" | "ABASTECIMENTO";
     placa: string;
@@ -20,9 +19,7 @@ export default async function handler(
     km: number;
     imagem: string;
     data: Date;
-  };
-
-  const registros: RegistroResponse[] = [];
+  }[] = [];
 
   if (!tipo || tipo === "KM") {
     const km = await prisma.kmRecord.findMany({
@@ -64,5 +61,5 @@ export default async function handler(
     );
   }
 
-  return res.status(200).json(registros);
+  return NextResponse.json(registros);
 }

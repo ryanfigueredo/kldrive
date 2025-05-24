@@ -1,33 +1,26 @@
 import { prisma } from "@/lib/prisma";
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { startDate, endDate, usuario, veiculo } = req.query;
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const startDate = searchParams.get("startDate");
+  const endDate = searchParams.get("endDate");
+  const usuario = searchParams.get("usuario");
+  const veiculo = searchParams.get("veiculo");
 
-  // Corrigido para tipagem segura
   const dateFilter: { gte?: Date; lte?: Date } = {};
-  if (typeof startDate === "string") {
-    dateFilter.gte = new Date(startDate + "T00:00:00");
-  }
-  if (typeof endDate === "string") {
-    dateFilter.lte = new Date(endDate + "T23:59:59");
-  }
-
-  const userId = Array.isArray(usuario) ? usuario[0] : usuario;
-  const vehicleId = Array.isArray(veiculo) ? veiculo[0] : veiculo;
+  if (startDate) dateFilter.gte = new Date(startDate + "T00:00:00");
+  if (endDate) dateFilter.lte = new Date(endDate + "T23:59:59");
 
   const filtros: {
-    createdAt?: { gte?: Date; lte?: Date };
+    createdAt?: typeof dateFilter;
     userId?: string;
     vehicleId?: string;
   } = {};
 
   if (Object.keys(dateFilter).length) filtros.createdAt = dateFilter;
-  if (userId) filtros.userId = userId;
-  if (vehicleId) filtros.vehicleId = vehicleId;
+  if (usuario) filtros.userId = usuario;
+  if (veiculo) filtros.vehicleId = veiculo;
 
   const [km, fuel] = await Promise.all([
     prisma.kmRecord.findMany({ where: filtros }),
@@ -55,7 +48,7 @@ export default async function handler(
       (abastecimentoPorVeiculo[placa] ?? 0) + r.valor;
   });
 
-  return res.status(200).json({
+  return NextResponse.json({
     totalKm,
     totalValorAbastecido,
     totalPorTipo,

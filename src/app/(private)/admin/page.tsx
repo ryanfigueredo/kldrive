@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { DateSelector } from "@/components/DateSelector";
 import { useSession } from "next-auth/react";
+import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 
 declare module "next-auth" {
   interface User {
@@ -20,6 +21,7 @@ declare module "next-auth" {
 import { useRouter } from "next/navigation";
 import Chart from "@/components/Chart";
 import Image from "next/image";
+import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
 
 interface Registro {
   id: string;
@@ -83,6 +85,11 @@ export default function AdminDashboard() {
   return (
     <main className="min-h-screen px-4 py-6 bg-dark text-white">
       <h1 className="text-xl font-bold mb-6">Painel Administrativo</h1>
+
+      <div className="flex gap-4 mb-4">
+        <CriarUsuarioDialog onUserCreated={() => window.location.reload()} />
+        <CriarVeiculoDialog onCreated={() => window.location.reload()} />
+      </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <DateSelector
