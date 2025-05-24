@@ -11,27 +11,29 @@ model User {
   id        String   @id @default(uuid())
   name      String?
   email     String   @unique
+  password  String
   role      Role     @default(COLABORADOR)
   createdAt DateTime @default(now())
 
-  vehicle       Vehicle?   @relation(fields: [vehicleId], references: [id])
-  vehicleId     String?    @unique
-
-  kmRecords     KmRecord[]
-  fuelRecords   FuelRecord[]
+  vehicles    Vehicle[]
+  kmRecords   KmRecord[]
+  fuelRecords FuelRecord[]
 }
 
 model Vehicle {
-  id             String      @id @default(uuid())
-  placa          String      @unique
-  modelo         String?
-  ano            Int?
+  id              String          @id @default(uuid())
+  placa           String          @unique
+  modelo          String?
+  ano             Int?
   tipoCombustivel TipoCombustivel
 
-  user           User?       // Inverso do relation
-  kmRecords      KmRecord[]
-  fuelRecords    FuelRecord[]
-  createdAt      DateTime    @default(now())
+  userId String? // <-- Adicionado
+  user   User?   @relation(fields: [userId], references: [id])
+
+  kmRecords   KmRecord[]
+  fuelRecords FuelRecord[]
+
+  createdAt DateTime @default(now())
 }
 
 model KmRecord {
@@ -47,18 +49,18 @@ model KmRecord {
 }
 
 model FuelRecord {
-  id              String   @id @default(uuid())
-  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
-  vehicleId       String
-  user            User     @relation(fields: [userId], references: [id])
-  userId          String
-  litros          Float
-  valor           Float
-  situacaoTanque  SituacaoTanque
-  kmAtual         Float
-  photoUrl        String
-  observacao      String?
-  createdAt       DateTime @default(now())
+  id             String         @id @default(uuid())
+  vehicle        Vehicle        @relation(fields: [vehicleId], references: [id])
+  vehicleId      String
+  user           User           @relation(fields: [userId], references: [id])
+  userId         String
+  litros         Float
+  valor          Float
+  situacaoTanque SituacaoTanque
+  kmAtual        Float
+  photoUrl       String
+  observacao     String?
+  createdAt      DateTime       @default(now())
 }
 
 enum Role {

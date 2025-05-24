@@ -8,26 +8,24 @@ const handler = NextAuth({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "text" },
-        password: { label: "Senha", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email) return null;
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
-        // Aqui você pode validar com o sistema real da empresa ou usar uma senha padrão temporária
-        if (user && credentials.password === "senhaDoEmail") {
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          };
-        }
+        // Se não encontrar o usuário, retorna null
+        if (!user) return null;
 
-        return null;
+        // Se encontrar, retorna os dados do usuário
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        };
       },
     }),
   ],
@@ -39,15 +37,11 @@ const handler = NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-      }
+      if (user) token.role = user.role;
       return token;
     },
     async session({ session, token }) {
-      if (session?.user) {
-        session.user.role = token.role as string;
-      }
+      if (session?.user) session.user.role = token.role as string;
       return session;
     },
   },

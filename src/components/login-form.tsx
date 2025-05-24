@@ -1,27 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function LoginForm() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -30,68 +18,42 @@ export function LoginForm({
     setLoading(true);
 
     const res = await signIn("credentials", {
-      redirect: false,
       email,
-      password,
+      redirect: false,
     });
 
-    setLoading(false);
-
     if (res?.ok) {
-      router.push("/dashboard");
+      router.push("/");
     } else {
-      alert("E-mail ou senha inválidos.");
+      alert("E-mail inválido ou não autorizado.");
     }
+
+    setLoading(false);
   }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Entrar no sistema</CardTitle>
-          <CardDescription>
-            Faça login com seu e-mail corporativo da KL Facilities.
-          </CardDescription>
+          <CardTitle className="text-2xl">Login</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seuemail@klfacilities.com.br"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
-                <a
-                  href="#"
-                  className="text-sm text-muted-foreground hover:underline"
-                >
-                  Esqueci minha senha
-                </a>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Entrando..." : "Entrar"}
-            </Button>
-          </form>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">E-mail corporativo</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="usuario@klfacilities.com.br"
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
+          </Button>
         </CardContent>
       </Card>
-    </div>
+    </form>
   );
 }
