@@ -1,4 +1,3 @@
-// lib/s3.ts
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import { File } from "formidable";

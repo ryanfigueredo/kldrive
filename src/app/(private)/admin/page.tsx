@@ -11,10 +11,14 @@ declare module "next-auth" {
   }
   interface Session {
     user: {
+      role?: string;
+      vehicles?: {
+        id: string;
+        placa: string;
+        modelo: string | null;
+      }[];
       name?: string | null;
       email?: string | null;
-      image?: string | null;
-      role?: string;
     };
   }
 }

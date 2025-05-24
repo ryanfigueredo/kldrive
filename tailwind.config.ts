@@ -12,7 +12,7 @@ export default {
       colors: {
         // Cores principais da KL
         primary: {
-          DEFAULT: "#55D462",
+          DEFAULT: "#c8d22c",
           foreground: "#ffffff",
         },
         secondary: {

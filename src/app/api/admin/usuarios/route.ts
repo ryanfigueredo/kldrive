@@ -1,52 +1,62 @@
-import { prisma } from "@/lib/prisma";
-import { NextApiRequest, NextApiResponse } from "next";
+// src/app/api/admin/usuarios/route.ts
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method === "GET") {
-    const usuarios = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        vehicles: {
-          select: {
-            id: true,
-            placa: true,
-            modelo: true,
-          },
+import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET() {
+  const usuarios = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      vehicles: {
+        select: {
+          id: true,
+          placa: true,
+          modelo: true,
         },
       },
-    });
+    },
+  });
 
-    return res.status(200).json(usuarios);
+  return NextResponse.json(usuarios);
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const { name, email, role, vehicleId } = body;
+
+  if (!email || !role) {
+    return NextResponse.json(
+      { error: "Email e cargo são obrigatórios." },
+      { status: 400 }
+    );
   }
 
-  if (req.method === "POST") {
-    const { name, email, role } = req.body;
+  const existingUser = await prisma.user.findUnique({ where: { email } });
 
-    if (!email || !role) {
-      return res.status(400).json({ error: "Email e cargo são obrigatórios." });
-    }
-
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: "E-mail já está cadastrado." });
-    }
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        role,
-        password: "senhaDoEmail", // mock por enquanto
-      },
-    });
-
-    return res.status(201).json(user);
+  if (existingUser) {
+    return NextResponse.json(
+      { error: "E-mail já está cadastrado." },
+      { status: 400 }
+    );
   }
 
-  return res.status(405).json({ error: "Método não permitido." });
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      role,
+      vehicles: vehicleId
+        ? {
+            connect: {
+              id: vehicleId,
+            },
+          }
+        : undefined,
+      password: "senhaDoEmail", // senha padrão
+    },
+  });
+
+  return NextResponse.json(user, { status: 201 });
 }

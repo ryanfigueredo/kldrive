@@ -1,166 +1,123 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import ImageUpload from "@/components/ImageUpload";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface KmRecord {
-  id: string;
-  km: number;
-  photoUrl: string;
-  observacao: string | null;
-  createdAt: string;
-}
-
-interface FuelRecord {
-  id: string;
-  litros: number;
-  valor: number;
-  situacaoTanque: string;
-  kmAtual: number;
-  photoUrl: string;
-  observacao: string | null;
-  createdAt: string;
-}
-
-interface Vehicle {
-  id: string;
-  placa: string;
-  modelo: string;
-}
-
-export default function Dashboard() {
-  const [kmRecords, setKmRecords] = useState<KmRecord[]>([]);
-  const [fuelRecords, setFuelRecords] = useState<FuelRecord[]>([]);
-  const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
+export default function NovoKm() {
+  const [km, setKm] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const [veiculoId, setVeiculoId] = useState("");
+  const [foto, setFoto] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [veiculos, setVeiculos] = useState<{ id: string; placa: string }[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/historico")
+    fetch("/api/admin/veiculos")
       .then((res) => res.json())
-      .then((data) => {
-        setKmRecords(data.kmRecords ?? []);
-        setFuelRecords(data.fuelRecords ?? []);
-      })
-      .catch(() => {
-        setKmRecords([]);
-        setFuelRecords([]);
-      });
-
-    const vehicleId = localStorage.getItem("veiculoSelecionado");
-    if (vehicleId) {
-      fetch(`/api/veiculos/${vehicleId}`)
-        .then((res) => res.json())
-        .then((data) => setVehicleInfo(data))
-        .catch(() => setVehicleInfo(null));
-    }
+      .then((data) => setVeiculos(data));
   }, []);
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const kmValue = parseFloat(km);
+    if (isNaN(kmValue) || kmValue <= 0) {
+      alert("Informe uma quilometragem válida.");
+      return;
+    }
+
+    if (!veiculoId || !foto) {
+      alert("Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+      formData.append("km", km);
+      formData.append("observacao", observacao);
+      formData.append("veiculoId", veiculoId);
+      formData.append("foto", foto);
+
+      const res = await fetch("/api/km-records", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || "Erro ao salvar quilometragem");
+        setLoading(false);
+        return;
+      }
+
+      alert("Quilometragem registrada com sucesso!");
+      router.push("/dashboard");
+    } catch (error) {
+      alert("Erro inesperado. Tente novamente.");
+      setLoading(false);
+    }
+  }
+
   return (
-    <main className="min-h-screen px-4 py-6 bg-dark">
-      <h1 className="text-xl font-bold mb-1 text-white">
-        Bem-vindo à KL Drive
+    <main className="min-h-screen bg-dark p-6">
+      <h1 className="text-xl font-bold mb-6 text-white">
+        Registrar Quilometragem
       </h1>
 
-      {vehicleInfo ? (
-        <p className="text-sm text-gray-600 mb-4">
-          Veículo atual: <strong>{vehicleInfo.placa}</strong> –{" "}
-          {vehicleInfo.modelo}
-        </p>
-      ) : (
-        <p className="text-sm text-red-500 mb-4">Nenhum veículo selecionado.</p>
-      )}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md">
+        <input
+          type="number"
+          min="0"
+          step="any"
+          placeholder="Quilometragem"
+          value={km}
+          onChange={(e) => setKm(e.target.value)}
+          className="p-3 rounded-md text-black"
+          required
+        />
 
-      <div className="flex flex-col gap-4 mb-8">
-        <Link href="/quilometragem/novo">
-          <div className="bg-primary text-white py-3 rounded-xl text-center">
-            Registrar Quilometragem
-          </div>
-        </Link>
+        <textarea
+          placeholder="Observação (opcional)"
+          value={observacao}
+          onChange={(e) => setObservacao(e.target.value)}
+          className="p-3 rounded-md resize-none"
+          rows={3}
+        />
 
-        <Link href="/abastecimento/novo">
-          <div className="bg-primary text-white py-3 rounded-xl text-center">
-            Registrar Abastecimento
-          </div>
-        </Link>
-      </div>
+        <Select value={veiculoId} onValueChange={setVeiculoId}>
+          <SelectTrigger className="w-full text-white">
+            <SelectValue placeholder="Selecione o veículo" />
+          </SelectTrigger>
+          <SelectContent>
+            {veiculos.map((v) => (
+              <SelectItem key={v.id} value={v.id}>
+                {v.placa}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-2 text-white">
-          Últimas Quilometragens
-        </h2>
-        <div className="flex flex-col gap-3">
-          {Array.isArray(kmRecords) && kmRecords.length > 0 ? (
-            kmRecords.map((r) => (
-              <div
-                key={r.id}
-                className="bg-white p-3 rounded-xl shadow-md flex gap-4 items-center"
-              >
-                <img
-                  src={r.photoUrl}
-                  alt="Odômetro"
-                  className="w-20 h-20 object-cover rounded-lg"
-                />
-                <div className="text-sm text-gray-800">
-                  <p>
-                    <strong>{r.km} km</strong>
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(r.createdAt).toLocaleString()}
-                  </p>
-                  {r.observacao && <p className="text-xs">{r.observacao}</p>}
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500">
-              Nenhuma quilometragem registrada ainda.
-            </p>
-          )}
-        </div>
-      </section>
+        <ImageUpload onChange={setFoto} />
 
-      <section>
-        <h2 className="text-lg font-semibold mb-2 text-white">
-          Últimos Abastecimentos
-        </h2>
-        <div className="flex flex-col gap-3">
-          {Array.isArray(fuelRecords) && fuelRecords.length > 0 ? (
-            fuelRecords.map((r) => (
-              <div
-                key={r.id}
-                className="bg-white p-3 rounded-xl shadow-md flex gap-4 items-center"
-              >
-                <Image
-                  src={r.photoUrl}
-                  alt="Cupom"
-                  width={80}
-                  height={80}
-                  className="w-20 h-20 object-cover rounded-lg"
-                />
-                <div className="text-sm text-gray-800">
-                  <p>
-                    <strong>
-                      {r.litros} L – R${r.valor.toFixed(2)}
-                    </strong>
-                  </p>
-                  <p className="text-xs">
-                    Tanque: {r.situacaoTanque.replace("_", " ")}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(r.createdAt).toLocaleString()}
-                  </p>
-                  <p className="text-xs">KM: {r.kmAtual}</p>
-                  {r.observacao && <p className="text-xs">{r.observacao}</p>}
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500">
-              Nenhum abastecimento registrado ainda.
-            </p>
-          )}
-        </div>
-      </section>
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-primary py-3 rounded-xl hover:bg-violet-700 transition disabled:opacity-50"
+        >
+          {loading ? "Enviando..." : "Registrar"}
+        </button>
+      </form>
     </main>
   );
 }
