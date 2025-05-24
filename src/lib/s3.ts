@@ -1,7 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
-import { File } from "formidable";
-import fs from "fs";
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -11,24 +9,19 @@ const s3 = new S3Client({
   },
 });
 
-export async function uploadToS3(file: File) {
-  if (!file.filepath) throw new Error("Caminho do arquivo inválido");
-
-  const fileStream = fs.createReadStream(file.filepath);
-
-  const filename = `odometros/${randomUUID()}-${file.originalFilename?.replace(
-    /\s/g,
-    "-"
-  )}`;
+// Função que recebe Buffer e nome original do arquivo
+export async function uploadToS3Buffer(buffer: Buffer, originalName: string) {
+  const key = `odometros/${randomUUID()}-${originalName.replace(/\s/g, "-")}`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME!,
-    Key: filename,
-    Body: fileStream,
-    ContentType: file.mimetype || "image/jpeg",
+    Key: key,
+    Body: buffer,
+    ContentType: "image/jpeg", // ou detecte conforme precisar
+    ACL: undefined, // Remova ACL pois seu bucket não permite ACLs
   });
 
   await s3.send(command);
 
-  return `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/${filename}`;
+  return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 }

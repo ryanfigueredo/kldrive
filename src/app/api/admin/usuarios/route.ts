@@ -1,100 +1,59 @@
-import { AuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
-import NextAuth from "next-auth";
+import { Role } from "@prisma/client";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      role?: string;
-      vehicles?: {
-        id: string;
-        placa: string;
-        modelo: string | null;
-      }[];
-      name?: string | null;
-      email?: string | null;
-    };
-  }
-
-  interface User {
-    role?: string;
-    vehicles?: {
-      id: string;
-      placa: string;
-      modelo: string | null;
-    }[];
-  }
+interface CreateUserBody {
+  name?: string;
+  email: string;
+  role: Role;
+  vehicleId?: string;
+  password: string;
 }
 
-export const authOptions: AuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Senha", type: "password" },
+export async function POST(req: Request) {
+  try {
+    const body: CreateUserBody = await req.json();
+    const { name, email, role, vehicleId, password } = body;
+
+    if (!email || !role || !password) {
+      return new Response(
+        JSON.stringify({ error: "Campos obrigatórios ausentes." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return new Response(JSON.stringify({ error: "E-mail já cadastrado." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        role: role as Role,
+        password: hashedPassword,
+        vehicles: vehicleId ? { connect: { id: vehicleId } } : undefined,
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+    });
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          include: {
-            vehicles: true,
-          },
-        });
-
-        if (!user) return null;
-
-        // Comparar senha fornecida com a hash salva no banco
-        const passwordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!passwordValid) return null;
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          vehicles: user.vehicles.map((v) => ({
-            id: v.id,
-            placa: v.placa,
-            modelo: v.modelo,
-          })),
-        };
-      },
-    }),
-  ],
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-        token.vehicles = (user as any).vehicles;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.role = token.role as string;
-        session.user.vehicles = Array.isArray(token.vehicles)
-          ? token.vehicles
-          : [];
-      }
-      return session;
-    },
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-};
-
-export default NextAuth(authOptions);
+    return new Response(JSON.stringify(user), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error(error);
+    return new Response(JSON.stringify({ error: "Erro interno." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}

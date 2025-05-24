@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         modelo,
         ano,
         tipoCombustivel:
-          tipoCombustivel as any as import("@prisma/client").TipoCombustivel,
+          tipoCombustivel as import("@prisma/client").TipoCombustivel,
       },
     });
 

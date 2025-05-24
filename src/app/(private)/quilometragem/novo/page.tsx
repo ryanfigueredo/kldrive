@@ -64,6 +64,7 @@ export default function NovoKm() {
       alert("Quilometragem registrada com sucesso!");
       router.push("/dashboard");
     } catch (error) {
+      console.error(error);
       alert("Erro inesperado. Tente novamente.");
       setLoading(false);
     }

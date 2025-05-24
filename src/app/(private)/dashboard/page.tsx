@@ -116,6 +116,7 @@ export default function Dashboard() {
         setKmRecords(updated.kmRecords ?? []);
       }
     } catch (error) {
+      console.error(error);
       alert("Erro inesperado.");
     } finally {
       setLoading(false);
