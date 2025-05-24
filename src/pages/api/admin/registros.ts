@@ -9,47 +9,49 @@ export default async function handler(
   const token = await getToken({ req });
   if (!token) return res.status(401).json({ error: "Não autenticado" });
 
-  // (opcional) limitar só a admins aqui
+  const tipo = req.query.tipo;
 
-  const [kmRecords, fuelRecords] = await Promise.all([
-    prisma.kmRecord.findMany({
-      include: {
-        user: true,
-        vehicle: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.fuelRecord.findMany({
-      include: {
-        user: true,
-        vehicle: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  const registros: any[] = [];
 
-  const registros = [
-    ...kmRecords.map((r) => ({
-      id: r.id,
-      tipo: "KM",
-      placa: r.vehicle?.placa ?? "—",
-      usuario: r.user?.email ?? "—",
-      valor: 0,
-      km: r.km,
-      imagem: r.photoUrl,
-      data: r.createdAt,
-    })),
-    ...fuelRecords.map((r) => ({
-      id: r.id,
-      tipo: "ABASTECIMENTO",
-      placa: r.vehicle?.placa ?? "—",
-      usuario: r.user?.email ?? "—",
-      valor: r.valor,
-      km: r.kmAtual,
-      imagem: r.photoUrl,
-      data: r.createdAt,
-    })),
-  ];
+  if (!tipo || tipo === "KM") {
+    const km = await prisma.kmRecord.findMany({
+      include: { user: true, vehicle: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    registros.push(
+      ...km.map((r) => ({
+        id: r.id,
+        tipo: "KM",
+        placa: r.vehicle?.placa ?? "—",
+        usuario: r.user?.email ?? "—",
+        valor: 0,
+        km: r.km,
+        imagem: r.photoUrl,
+        data: r.createdAt,
+      }))
+    );
+  }
+
+  if (!tipo || tipo === "ABASTECIMENTO") {
+    const fuel = await prisma.fuelRecord.findMany({
+      include: { user: true, vehicle: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    registros.push(
+      ...fuel.map((r) => ({
+        id: r.id,
+        tipo: "ABASTECIMENTO",
+        placa: r.vehicle?.placa ?? "—",
+        usuario: r.user?.email ?? "—",
+        valor: r.valor,
+        km: r.kmAtual,
+        imagem: r.photoUrl,
+        data: r.createdAt,
+      }))
+    );
+  }
 
   return res.status(200).json(registros);
 }
