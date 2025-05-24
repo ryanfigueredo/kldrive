@@ -2,8 +2,6 @@ import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 
-import NextAuth from "next-auth";
-
 declare module "next-auth" {
   interface Session {
     user: {
