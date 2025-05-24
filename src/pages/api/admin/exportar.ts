@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextApiRequest, NextApiResponse } from "next";
 import ExcelJS from "exceljs";
-
-const PDFDocument = require("pdfkit");
+import PDFDocument from "pdfkit";
 
 export const config = {
   api: { responseLimit: false },
@@ -14,20 +13,29 @@ export default async function handler(
 ) {
   const { tipo, startDate, endDate, usuario, veiculo, formato } = req.query;
 
-  const dateFilter: any = {};
-  if (startDate) dateFilter.gte = new Date(startDate + "T00:00:00");
-  if (endDate) dateFilter.lte = new Date(endDate + "T23:59:59");
+  const dateFilter: Record<string, Date> = {};
+  if (startDate) dateFilter.gte = new Date(`${startDate}T00:00:00`);
+  if (endDate) dateFilter.lte = new Date(`${endDate}T23:59:59`);
 
   const userId = Array.isArray(usuario) ? usuario[0] : usuario;
   const vehicleId = Array.isArray(veiculo) ? veiculo[0] : veiculo;
 
   const filtros = {
-    createdAt: Object.keys(dateFilter).length ? dateFilter : undefined,
+    createdAt: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
     userId: userId || undefined,
     vehicleId: vehicleId || undefined,
   };
 
-  let registros: any[] = [];
+  type RegistroExportado = {
+    tipo: string;
+    placa: string;
+    usuario: string;
+    valor: number;
+    km: number;
+    data: string;
+  };
+
+  const registros: RegistroExportado[] = [];
 
   if (!tipo || tipo === "KM") {
     const km = await prisma.kmRecord.findMany({

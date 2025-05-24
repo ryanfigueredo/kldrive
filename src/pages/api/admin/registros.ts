@@ -9,9 +9,20 @@ export default async function handler(
   const token = await getToken({ req });
   if (!token) return res.status(401).json({ error: "Não autenticado" });
 
-  const tipo = req.query.tipo;
+  const tipo = req.query.tipo as string | undefined;
 
-  const registros: any[] = [];
+  type RegistroResponse = {
+    id: string;
+    tipo: "KM" | "ABASTECIMENTO";
+    placa: string;
+    usuario: string;
+    valor: number;
+    km: number;
+    imagem: string;
+    data: Date;
+  };
+
+  const registros: RegistroResponse[] = [];
 
   if (!tipo || tipo === "KM") {
     const km = await prisma.kmRecord.findMany({
@@ -22,7 +33,7 @@ export default async function handler(
     registros.push(
       ...km.map((r) => ({
         id: r.id,
-        tipo: "KM",
+        tipo: "KM" as const,
         placa: r.vehicle?.placa ?? "—",
         usuario: r.user?.email ?? "—",
         valor: 0,
@@ -42,7 +53,7 @@ export default async function handler(
     registros.push(
       ...fuel.map((r) => ({
         id: r.id,
-        tipo: "ABASTECIMENTO",
+        tipo: "ABASTECIMENTO" as const,
         placa: r.vehicle?.placa ?? "—",
         usuario: r.user?.email ?? "—",
         valor: r.valor,
