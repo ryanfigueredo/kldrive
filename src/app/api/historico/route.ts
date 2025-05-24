@@ -1,14 +1,11 @@
-// src/pages/api/historico.ts
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export async function GET(req: NextRequest) {
   const token = await getToken({ req });
-  if (!token) return res.status(401).json({ error: "Não autenticado" });
+  if (!token)
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
   const userEmail = token.email!;
 
@@ -17,7 +14,11 @@ export default async function handler(
     select: { id: true },
   });
 
-  if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+  if (!user)
+    return NextResponse.json(
+      { error: "Usuário não encontrado" },
+      { status: 404 }
+    );
 
   const kmRecords = await prisma.kmRecord.findMany({
     where: { userId: user.id },
@@ -31,5 +32,5 @@ export default async function handler(
     take: 5,
   });
 
-  return res.status(200).json({ kmRecords, fuelRecords });
+  return NextResponse.json({ kmRecords, fuelRecords });
 }
