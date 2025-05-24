@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -47,6 +48,19 @@ export function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@klfacilities.com.br"
               required
+              className="border border-gray-300 focus:border-green-500 focus:ring-blue-500 focus:ring-1 rounded-md"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="email">Senha</Label>
+            <Input
+              type="password"
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="border border-gray-300 focus:border-green-500 focus:ring-blue-500 focus:ring-1 rounded-md"
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>

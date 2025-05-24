@@ -1,62 +1,100 @@
-// src/app/api/admin/usuarios/route.ts
-
+import { AuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcrypt";
+import NextAuth from "next-auth";
 
-export async function GET() {
-  const usuarios = await prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      vehicles: {
-        select: {
-          id: true,
-          placa: true,
-          modelo: true,
-        },
+declare module "next-auth" {
+  interface Session {
+    user: {
+      role?: string;
+      vehicles?: {
+        id: string;
+        placa: string;
+        modelo: string | null;
+      }[];
+      name?: string | null;
+      email?: string | null;
+    };
+  }
+
+  interface User {
+    role?: string;
+    vehicles?: {
+      id: string;
+      placa: string;
+      modelo: string | null;
+    }[];
+  }
+}
+
+export const authOptions: AuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Senha", type: "password" },
       },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+          include: {
+            vehicles: true,
+          },
+        });
+
+        if (!user) return null;
+
+        // Comparar senha fornecida com a hash salva no banco
+        const passwordValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!passwordValid) return null;
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          vehicles: user.vehicles.map((v) => ({
+            id: v.id,
+            placa: v.placa,
+            modelo: v.modelo,
+          })),
+        };
+      },
+    }),
+  ],
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+        token.vehicles = (user as any).vehicles;
+      }
+      return token;
     },
-  });
-
-  return NextResponse.json(usuarios);
-}
-
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { name, email, role, vehicleId } = body;
-
-  if (!email || !role) {
-    return NextResponse.json(
-      { error: "Email e cargo são obrigatórios." },
-      { status: 400 }
-    );
-  }
-
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-
-  if (existingUser) {
-    return NextResponse.json(
-      { error: "E-mail já está cadastrado." },
-      { status: 400 }
-    );
-  }
-
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      role,
-      vehicles: vehicleId
-        ? {
-            connect: {
-              id: vehicleId,
-            },
-          }
-        : undefined,
-      password: "senhaDoEmail", // senha padrão
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.role = token.role as string;
+        session.user.vehicles = Array.isArray(token.vehicles)
+          ? token.vehicles
+          : [];
+      }
+      return session;
     },
-  });
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+};
 
-  return NextResponse.json(user, { status: 201 });
-}
+export default NextAuth(authOptions);
