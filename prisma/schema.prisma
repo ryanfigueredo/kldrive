@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String   @unique
+  role      Role     @default(COLABORADOR)
+  createdAt DateTime @default(now())
+
+  vehicles       Vehicle[]
+  kmRecords      KmRecord[]
+  fuelRecords    FuelRecord[]
+}
+
+model Vehicle {
+  id             String      @id @default(uuid())
+  placa          String      @unique
+  modelo         String?
+  ano            Int?
+  tipoCombustivel TipoCombustivel
+  user           User?       @relation(fields: [userId], references: [id])
+  userId         String?
+
+  kmRecords      KmRecord[]
+  fuelRecords    FuelRecord[]
+
+  createdAt      DateTime    @default(now())
+}
+
+model KmRecord {
+  id         String   @id @default(uuid())
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId  String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  km         Float
+  photoUrl   String
+  observacao String?
+  createdAt  DateTime @default(now())
+}
+
+model FuelRecord {
+  id              String   @id @default(uuid())
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId       String
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  litros          Float
+  valor           Float
+  situacaoTanque  SituacaoTanque
+  kmAtual         Float
+  photoUrl        String
+  observacao      String?
+  createdAt       DateTime @default(now())
+}
+
+enum Role {
+  COLABORADOR
+  SUPERVISOR
+  ADMIN
+}
+
+enum TipoCombustivel {
+  GASOLINA
+  ALCOOL
+  DIESEL
+  FLEX
+}
+
+enum SituacaoTanque {
+  CHEIO
+  MEIO_TANQUE
+  QUASE_VAZIO
+}
