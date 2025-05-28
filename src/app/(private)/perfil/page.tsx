@@ -13,7 +13,7 @@ export default function Perfil() {
 
       <button
         onClick={() => signOut()}
-        className="mt-6 bg-red-600 py-2 px-4 rounded-none-lg font-semibold"
+        className="mt-6 bg-red-600 py-2 px-4 rounded-lg font-semibold"
       >
         Sair
       </button>

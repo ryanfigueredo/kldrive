@@ -14,15 +14,7 @@ import {
 export function Sidebar() {
   return (
     <aside className="fixed top-0 left-0 h-full w-16 text-white bg-[#242424] flex flex-col items-center py-4  shadow-lg">
-      <div className="mb-6">
-        <Image
-          src="/logo-kl-negative.svg"
-          alt="KL Facilities"
-          width={40}
-          height={40}
-        />
-      </div>
-      <nav className="flex flex-col gap-8 text-white ">
+      <nav className="flex py-28 flex-col gap-8 text-white ">
         <SidebarNavLink
           href="/dashboard"
           icon={<Home size={24} />}
@@ -79,24 +71,24 @@ export function Header() {
       <div className="flex items-center gap-4 text-gray-700">
         <button
           aria-label="Adicionar"
-          className="p-2 rounded-sm hover:bg-gray-200"
+          className="p-2 roundedsm hover:bg-gray-200"
         >
           <Plus size={20} />
         </button>
         <button
           aria-label="Notificações"
-          className="p-2 rounded-sm hover:bg-gray-200"
+          className="p-2 roundedsm hover:bg-gray-200"
         >
           <Bell size={20} />
         </button>
         <button
           aria-label="Calendário"
-          className="p-2 rounded-sm hover:bg-gray-200"
+          className="p-2 roundedsm hover:bg-gray-200"
         >
           <Calendar size={20} />
         </button>
         <div
-          className="w-8 h-8 rounded-sm bg-gray-300"
+          className="w-8 h-8 roundedsm bg-gray-300"
           title="Avatar do Usuário"
         />
       </div>

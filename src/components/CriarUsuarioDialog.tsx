@@ -59,7 +59,7 @@ export function CriarUsuarioDialog({
 
       if (res.ok) {
         alert("Usuário criado com sucesso!");
-        setOpen(false); // fecha o modal
+        setOpen(false);
         setName("");
         setEmail("");
         setRole("COLABORADOR");

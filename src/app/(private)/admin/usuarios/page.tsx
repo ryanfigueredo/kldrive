@@ -58,7 +58,7 @@ export default function UsuariosPage() {
         {usuarios.map((user) => (
           <div
             key={user.id}
-            className="bg-muted p-4 rounded-none-lg flex flex-col md:flex-row justify-between items-center gap-4"
+            className="bg-muted p-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4"
           >
             <div>
               <p className="font-semibold">{user.name ?? "Sem nome"}</p>

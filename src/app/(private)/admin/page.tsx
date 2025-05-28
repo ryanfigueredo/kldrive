@@ -107,7 +107,7 @@ export default function AdminDashboard() {
         <select
           value={tipo}
           onChange={(e) => setTipo(e.target.value)}
-          className=" border border-gray-600 rounded-none-md p-2  w-full"
+          className=" border border-gray-600 rounded-md p-2  w-full"
         >
           <option value="">Todos os tipos</option>
           <option value="KM">Quilometragem</option>
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
             setStartDate(undefined);
             setEndDate(undefined);
           }}
-          className="bg-red-600  px-4 py-2 rounded-none-md font-semibold"
+          className="bg-red-600  px-4 py-2 rounded-md font-semibold"
         >
           Limpar Filtros
         </button>
@@ -130,26 +130,26 @@ export default function AdminDashboard() {
 
       {/* TOTALIZADORES */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className=" p-4 rounded-none-xl ">
+        <div className=" p-4 rounded-xl ">
           <p className="text-sm text-gray-400">Total KM Rodado</p>
           <h3 className="text-2xl font-bold">
             {graficoData.totalKm ? graficoData.totalKm.toLocaleString() : "0"}{" "}
             km
           </h3>
         </div>
-        <div className=" p-4 rounded-none-xl ">
+        <div className=" p-4 rounded-xl ">
           <p className="text-sm text-gray-400">Valor Total Abastecido</p>
           <h3 className="text-2xl font-bold">
             R$ {graficoData.totalValorAbastecido?.toFixed(2) ?? "0.00"}
           </h3>
         </div>
-        <div className=" p-4 rounded-none-xl ">
+        <div className=" p-4 rounded-xl ">
           <p className="text-sm text-gray-400">Registros de KM</p>
           <h3 className="text-2xl font-bold">
             {graficoData.totalPorTipo?.KM ?? 0}
           </h3>
         </div>
-        <div className=" p-4 rounded-none-xl ">
+        <div className=" p-4 rounded-xl ">
           <p className="text-sm text-gray-400">Registros de Abastecimento</p>
           <h3 className="text-2xl font-bold">
             {graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
 
       {/* GRÁFICOS */}
       <div className="grid md:grid-cols-2 gap-6 mb-10">
-        <div className=" p-4 rounded-none-xl ">
+        <div className=" p-4 rounded-xl ">
           <h3 className="text-lg font-semibold mb-2">KM por Dia</h3>
           {graficoData.kmPorData &&
           Object.keys(graficoData.kmPorData).length > 0 ? (
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className=" p-4 rounded-none-xl ">
+        <div className=" p-4 rounded-xl ">
           <h3 className="text-lg font-semibold mb-2">Distribuição por Tipo</h3>
           {graficoData.totalPorTipo &&
           (graficoData.totalPorTipo.KM ||
@@ -206,14 +206,14 @@ export default function AdminDashboard() {
           registros.map((r) => (
             <div
               key={r.id}
-              className=" rounded-none-xl shadow-md p-4 flex gap-4 items-center"
+              className=" rounded-xl shadow-md p-4 flex gap-4 items-center"
             >
               <Image
                 width={80}
                 height={80}
                 src={r.imagem}
                 alt="Registro"
-                className="rounded-none-lg object-cover"
+                className="rounded-lg object-cover"
               />
               <div className="text-sm ">
                 <p>

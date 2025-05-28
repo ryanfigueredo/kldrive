@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { Role } from "@prisma/client";
 
 interface CreateUserBody {
-  name?: string;
+  name: string;
   email: string;
   role: Role;
   vehicleId?: string;
@@ -15,6 +15,7 @@ export async function POST(req: Request) {
     const body: CreateUserBody = await req.json();
     const { name, email, role, vehicleId, password } = body;
 
+    // Validar campos obrigatórios
     if (!email || !role || !password) {
       return new Response(
         JSON.stringify({ error: "Campos obrigatórios ausentes." }),
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // Verifica se o email já existe
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return new Response(JSON.stringify({ error: "E-mail já cadastrado." }), {
@@ -33,13 +35,15 @@ export async function POST(req: Request) {
       });
     }
 
+    // Criptografa a senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Cria o usuário no banco, incluindo o nome
     const user = await prisma.user.create({
       data: {
-        name,
+        name, // aqui o name é inserido no banco
         email,
-        role: role as Role,
+        role,
         password: hashedPassword,
         vehicles: vehicleId ? { connect: { id: vehicleId } } : undefined,
       },

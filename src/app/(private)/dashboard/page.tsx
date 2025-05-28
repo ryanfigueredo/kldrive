@@ -186,12 +186,12 @@ export default function Dashboard() {
             kmRecords.map((r) => (
               <div
                 key={r.id}
-                className="bg-white p-3 rounded-none-xl shadow-md flex gap-4 items-center"
+                className="bg-white p-3 rounded-xl shadow-md flex gap-4 items-center"
               >
                 <img
                   src={r.photoUrl}
                   alt="Odômetro"
-                  className="w-20 h-20 object-cover rounded-none-lg"
+                  className="w-20 h-20 object-cover rounded-lg"
                 />
                 <div className="text-sm text-gray-800">
                   <p>
@@ -220,14 +220,14 @@ export default function Dashboard() {
             fuelRecords.map((r) => (
               <div
                 key={r.id}
-                className="bg-white p-3 rounded-none-xl shadow-md flex gap-4 items-center"
+                className="bg-white p-3 rounded-xl shadow-md flex gap-4 items-center"
               >
                 <Image
                   src={r.photoUrl}
                   alt="Cupom"
                   width={80}
                   height={80}
-                  className="w-20 h-20 object-cover rounded-none-lg"
+                  className="w-20 h-20 object-cover rounded-lg"
                 />
                 <div className="text-sm text-gray-800">
                   <p>

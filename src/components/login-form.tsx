@@ -34,7 +34,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card className="bg-white text-black shadow-sm rounded-none-lg ">
+      <Card className="bg-white text-black shadow-sm rounded-lg ">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
         </CardHeader>
@@ -48,7 +48,7 @@ export function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@klfacilities.com.br"
               required
-              className="border border-gray-300 focus:border-green-500 focus:ring-blue-500 focus:ring-1 rounded-none-md"
+              className="border border-gray-300 focus:border-green-500 focus:ring-blue-500 focus:ring-1 rounded-md"
             />
           </div>
 
@@ -60,7 +60,7 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="border border-gray-300 focus:border-green-500 focus:ring-blue-500 focus:ring-1 rounded-none-md"
+              className="border border-gray-300 focus:border-green-500 focus:ring-blue-500 focus:ring-1 rounded-md"
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
