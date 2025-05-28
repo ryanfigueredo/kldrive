@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { Bell, Calendar, Plus } from "lucide-react"; // ícones que você pode usar
 import { useSession, signOut } from "next-auth/react";
-import LogoKL from "@/public/logo-kl.svg";
 
 export default function Header() {
   const { data: session } = useSession();
@@ -12,7 +11,7 @@ export default function Header() {
     <header className="flex items-center justify-between bg-white text-white p-2 shadow-md">
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <LogoKL width={160} height={80} />
+        <Image src="/logo-kl.svg" alt="KL Facilities" width={80} height={40} />
       </div>
 
       {/* Search (opcional, pode remover se quiser) */}
