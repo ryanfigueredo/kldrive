@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useSession } from "next-auth/react";
 import { Figtree } from "next/font/google";
 import "./globals.css";
 
@@ -12,40 +14,46 @@ const figtree = Figtree({
   subsets: ["latin"],
   weight: ["600"],
 });
-export const metadata: Metadata = {
-  title: "KL Drive",
-  description: "Controle de quilometragem e abastecimento",
-};
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const { data: session, status } = useSession();
+
+  // Enquanto carrega, pode mostrar algo neutro
+  if (status === "loading") {
+    return <div>Carregando...</div>;
+  }
+
+  const isLoggedIn = !!session;
+
   return (
     <html lang="en">
       <body className={`${figtree.className} antialiased`}>
-        {" "}
         <SessionWrapper>
-          <div className="hidden md:flex fixed top-0 left-0 bottom-0 w-64">
-            <Sidebar />
-          </div>
+          {isLoggedIn && (
+            <>
+              <div className="hidden md:flex fixed top-0 left-0 bottom-0 w-64">
+                <Sidebar />
+              </div>
 
-          {/* Header fixo sempre no topo */}
-          <div className="fixed top-0 left-0 right-0 h-16 z-50">
-            <Header />
-          </div>
+              <div className="fixed top-0 left-0 right-0 h-16 z-50">
+                <Header />
+              </div>
 
-          {/* Mobile nav apenas mobile */}
-          <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md">
-            <MobileNav />
-          </div>
+              <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md">
+                <MobileNav />
+              </div>
+            </>
+          )}
 
-          <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md">
-            <MobileNav />
-          </div>
-
-          <main className="md:m-24 min-h-screen">{children}</main>
+          <main
+            className={`${isLoggedIn ? "md:ml-64 pt-16" : ""} p-4 min-h-screen`}
+          >
+            {children}
+          </main>
         </SessionWrapper>
       </body>
     </html>
