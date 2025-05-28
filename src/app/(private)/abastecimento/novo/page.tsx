@@ -59,7 +59,7 @@ export default function NovoAbastecimento() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 bg-dark">
+    <main className="min-h-screen px-4 py-6 ">
       <h1 className="text-xl font-bold mb-6">Registrar Abastecimento</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <ImageUpload onChange={setFoto} />
@@ -69,7 +69,7 @@ export default function NovoAbastecimento() {
           placeholder="Litros abastecidos"
           value={litros}
           onChange={(e) => setLitros(e.target.value)}
-          className="border rounded-lg p-3 w-full text-black"
+          className="border rounded-none-lg p-3 w-full text-black"
         />
 
         <input
@@ -77,11 +77,11 @@ export default function NovoAbastecimento() {
           placeholder="Valor total (R$)"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
-          className="border rounded-lg p-3 w-full text-black"
+          className="border rounded-none-lg p-3 w-full text-black"
         />
 
         <Select value={situacao} onValueChange={setSituacao}>
-          <SelectTrigger className="text-white">
+          <SelectTrigger className="">
             <SelectValue placeholder="Situação do tanque" />
           </SelectTrigger>
           <SelectContent>
@@ -96,20 +96,20 @@ export default function NovoAbastecimento() {
           placeholder="Quilometragem atual"
           value={kmAtual}
           onChange={(e) => setKmAtual(e.target.value)}
-          className="border rounded-lg p-3 w-full text-black"
+          className="border rounded-none-lg p-3 w-full text-black"
         />
 
         <textarea
           placeholder="Observações (opcional)"
           value={observacao}
           onChange={(e) => setObservacao(e.target.value)}
-          className="border rounded-lg p-3 w-full"
+          className="border rounded-none-lg p-3 w-full"
         />
 
         <button
           type="submit"
           disabled={loading}
-          className="bg-primary  py-3 rounded-xl hover:bg-violet-700 transition disabled:opacity-50"
+          className="bg-primary  py-3 rounded-none-xl hover:bg-black/40 transition disabled:opacity-50"
         >
           {loading ? "Enviando..." : "Registrar"}
         </button>

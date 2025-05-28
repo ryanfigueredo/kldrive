@@ -17,6 +17,7 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
 declare module "next-auth" {
   interface Session {
     user: {
+      image: string;
       role?: string;
       vehicles?: {
         id: string;

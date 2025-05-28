@@ -31,13 +31,13 @@ export default function ImageUpload({ onChange }: ImageUploadProps) {
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="bg-gray-200 p-4 w-full rounded-xl text-center text-gray-700"
+        className="bg-gray-200 p-4 w-full rounded-none-xl text-center text-gray-700"
       >
         {preview ? (
           <img
             src={preview}
             alt="Preview"
-            className="w-full h-40 object-cover rounded-xl"
+            className="w-full h-40 object-cover rounded-none-xl"
           />
         ) : (
           "Selecionar Foto do Odômetro"

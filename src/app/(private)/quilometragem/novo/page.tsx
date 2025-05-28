@@ -71,10 +71,8 @@ export default function NovoKm() {
   }
 
   return (
-    <main className="min-h-screen bg-dark p-6">
-      <h1 className="text-xl font-bold mb-6 text-white">
-        Registrar Quilometragem
-      </h1>
+    <main className="min-h-screen  p-6">
+      <h1 className="text-xl font-bold mb-6 ">Registrar Quilometragem</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md">
         <input
@@ -84,7 +82,7 @@ export default function NovoKm() {
           placeholder="Quilometragem"
           value={km}
           onChange={(e) => setKm(e.target.value)}
-          className="p-3 rounded-md text-black"
+          className="p-3 rounded-none-md text-black"
           required
         />
 
@@ -92,12 +90,12 @@ export default function NovoKm() {
           placeholder="Observação (opcional)"
           value={observacao}
           onChange={(e) => setObservacao(e.target.value)}
-          className="p-3 rounded-md resize-none"
+          className="p-3 rounded-none-md resize-none"
           rows={3}
         />
 
         <Select value={veiculoId} onValueChange={setVeiculoId}>
-          <SelectTrigger className="w-full text-white">
+          <SelectTrigger className="w-full ">
             <SelectValue placeholder="Selecione o veículo" />
           </SelectTrigger>
           <SelectContent>
@@ -114,7 +112,7 @@ export default function NovoKm() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-primary py-3 rounded-xl hover:bg-violet-700 transition disabled:opacity-50"
+          className="bg-primary py-3 rounded-none-xl hover:bg-violet-700 transition disabled:opacity-50"
         >
           {loading ? "Enviando..." : "Registrar"}
         </button>
