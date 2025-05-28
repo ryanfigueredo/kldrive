@@ -11,10 +11,11 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
+
 const bucketName = process.env.AWS_BUCKET_NAME!;
 
 export async function POST(req: NextRequest) {
-  const token = await getToken({ req });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
@@ -26,9 +27,12 @@ export async function POST(req: NextRequest) {
     const observacao = formData.get("observacao")?.toString() || "";
     const veiculoId = formData.get("veiculoId")?.toString();
 
-    const fotoFile = formData.get("foto") as File | null;
+    const fotoFile = formData.get("foto");
+    if (!(fotoFile instanceof Blob)) {
+      return NextResponse.json({ error: "Arquivo inválido" }, { status: 400 });
+    }
 
-    if (!kmString || !veiculoId || !fotoFile) {
+    if (!kmString || !veiculoId) {
       return NextResponse.json(
         { error: "Campos obrigatórios ausentes" },
         { status: 400 }
@@ -43,15 +47,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // converter para buffer para enviar ao S3
     const arrayBuffer = await fotoFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // cria chave única com extensão
-    const ext = fotoFile.name.split(".").pop() || "jpg";
+    const ext = fotoFile.name?.split(".").pop() || "jpg";
     const key = `uploads/${randomUUID()}.${ext}`;
 
-    // envia para S3
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
@@ -63,7 +64,6 @@ export async function POST(req: NextRequest) {
 
     const fotoUrl = `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
-    // cria registro no banco
     const registro = await prisma.kmRecord.create({
       data: {
         km,
