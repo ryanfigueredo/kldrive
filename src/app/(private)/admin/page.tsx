@@ -1,32 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DateSelector } from "@/components/DateSelector";
 import { useSession } from "next-auth/react";
-import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
-
-declare module "next-auth" {
-  interface User {
-    role?: string;
-  }
-  interface Session {
-    user: {
-      image: string;
-      role?: string;
-      vehicles?: {
-        id: string;
-        placa: string;
-        modelo: string | null;
-      }[];
-      name?: string | null;
-      email?: string | null;
-    };
-  }
-}
 import { useRouter } from "next/navigation";
+import { useDebounce } from "@/hooks/useDebounce";
+
 import Chart from "@/components/Chart";
-import Image from "next/image";
+import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
+
+import { RegistroItem } from "@/components/RegistroItem";
+import { FiltroDialog } from "@/components/FiltroDialog";
 
 interface Registro {
   id: string;
@@ -57,9 +41,19 @@ export default function AdminDashboard() {
   const [graficoData, setGraficoData] = useState<GraficoData>({});
   const [usuario, setUsuario] = useState("");
   const [veiculo, setVeiculo] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // Debounce para evitar chamadas em excesso
+  const debouncedTipo = useDebounce(tipo, 500);
+  const debouncedStartDate = useDebounce(startDate, 500);
+  const debouncedEndDate = useDebounce(endDate, 500);
+  const debouncedUsuario = useDebounce(usuario, 500);
+  const debouncedVeiculo = useDebounce(veiculo, 500);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -71,85 +65,105 @@ export default function AdminDashboard() {
   }, [status, session, router]);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (tipo) params.set("tipo", tipo);
-    if (usuario) params.set("usuario", usuario);
-    if (veiculo) params.set("veiculo", veiculo);
-    if (startDate) params.set("startDate", startDate.toISOString());
-    if (endDate) params.set("endDate", endDate.toISOString());
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        if (debouncedTipo) params.set("tipo", debouncedTipo);
+        if (debouncedUsuario) params.set("usuario", debouncedUsuario);
+        if (debouncedVeiculo) params.set("veiculo", debouncedVeiculo);
+        if (debouncedStartDate)
+          params.set("startDate", debouncedStartDate.toISOString());
+        if (debouncedEndDate)
+          params.set("endDate", debouncedEndDate.toISOString());
 
-    fetch(`/api/admin/registros?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data: Registro[]) => setRegistros(data ?? []));
+        const [registrosRes, dashboardRes] = await Promise.all([
+          fetch(`/api/admin/registros?${params.toString()}`),
+          fetch(`/api/admin/dashboard-metrics?${params.toString()}`),
+        ]);
 
-    fetch(`/api/admin/dashboard-metrics?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data: GraficoData) => setGraficoData(data ?? {}));
-  }, [tipo, startDate, endDate, usuario, veiculo]);
+        if (!registrosRes.ok || !dashboardRes.ok)
+          throw new Error("Erro ao carregar dados.");
+
+        const registrosData: Registro[] = await registrosRes.json();
+        const dashboardData: GraficoData = await dashboardRes.json();
+
+        setRegistros(registrosData ?? []);
+        setGraficoData(dashboardData ?? {});
+      } catch (err) {
+        setError("Erro ao carregar dados do dashboard.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [
+    debouncedTipo,
+    debouncedStartDate,
+    debouncedEndDate,
+    debouncedUsuario,
+    debouncedVeiculo,
+  ]);
+
+  const limparFiltros = () => {
+    setTipo("");
+    setUsuario("");
+    setVeiculo("");
+    setStartDate(undefined);
+    setEndDate(undefined);
+  };
 
   return (
-    <main className="min-h-screen px-4 py-6  ">
+    <main className="min-h-screen px-4 py-6">
       <h1 className="text-xl font-bold mb-6">Painel Administrativo</h1>
 
       <div className="flex gap-4 mb-4 text-white">
         <CriarUsuarioDialog onUserCreated={() => window.location.reload()} />
         <CriarVeiculoDialog onCreated={() => window.location.reload()} />
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <DateSelector
-          label="Data Inicial"
-          date={startDate}
-          setDate={setStartDate}
+        <FiltroDialog
+          filtersOpen={filtersOpen}
+          setFiltersOpen={setFiltersOpen}
+          tipo={tipo}
+          setTipo={setTipo}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={endDate}
+          setEndDate={setEndDate}
+          usuario={usuario}
+          setUsuario={setUsuario}
+          veiculo={veiculo}
+          setVeiculo={setVeiculo}
+          onClearFilters={limparFiltros}
         />
-        <DateSelector label="Data Final" date={endDate} setDate={setEndDate} />
-
-        <select
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
-          className=" border border-gray-600 rounded-md p-2  w-full"
-        >
-          <option value="">Todos os tipos</option>
-          <option value="KM">Quilometragem</option>
-          <option value="ABASTECIMENTO">Abastecimento</option>
-        </select>
-
-        <button
-          onClick={() => {
-            setTipo("");
-            setUsuario("");
-            setVeiculo("");
-            setStartDate(undefined);
-            setEndDate(undefined);
-          }}
-          className="bg-red-600  px-4 py-2 rounded-md font-semibold"
-        >
-          Limpar Filtros
-        </button>
       </div>
+
+      {loading && <p>Carregando dados...</p>}
+      {error && <p className="text-red-600">{error}</p>}
 
       {/* TOTALIZADORES */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className=" p-4 rounded-xl ">
+        <div className="p-4 rounded-xl">
           <p className="text-sm text-gray-400">Total KM Rodado</p>
           <h3 className="text-2xl font-bold">
             {graficoData.totalKm ? graficoData.totalKm.toLocaleString() : "0"}{" "}
             km
           </h3>
         </div>
-        <div className=" p-4 rounded-xl ">
+        <div className="p-4 rounded-xl">
           <p className="text-sm text-gray-400">Valor Total Abastecido</p>
           <h3 className="text-2xl font-bold">
             R$ {graficoData.totalValorAbastecido?.toFixed(2) ?? "0.00"}
           </h3>
         </div>
-        <div className=" p-4 rounded-xl ">
+        <div className="p-4 rounded-xl">
           <p className="text-sm text-gray-400">Registros de KM</p>
           <h3 className="text-2xl font-bold">
             {graficoData.totalPorTipo?.KM ?? 0}
           </h3>
         </div>
-        <div className=" p-4 rounded-xl ">
+        <div className="p-4 rounded-xl">
           <p className="text-sm text-gray-400">Registros de Abastecimento</p>
           <h3 className="text-2xl font-bold">
             {graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
@@ -158,8 +172,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* GRÁFICOS */}
-      <div className="grid md:grid-cols-2 gap-6 mb-10">
-        <div className=" p-4 rounded-xl ">
+      {/* <div className="grid md:grid-cols-2 gap-6 mb-10">
+        <div className="p-4 rounded-xl">
           <h3 className="text-lg font-semibold mb-2">KM por Dia</h3>
           {graficoData.kmPorData &&
           Object.keys(graficoData.kmPorData).length > 0 ? (
@@ -169,23 +183,21 @@ export default function AdminDashboard() {
                 total: Number(km),
               }))}
               colors={["lime"]}
+              type="line"
             />
           ) : (
             <p className="text-gray-500 text-sm">Sem dados para exibir.</p>
           )}
         </div>
 
-        <div className=" p-4 rounded-xl ">
+        <div className="p-4 rounded-xl">
           <h3 className="text-lg font-semibold mb-2">Distribuição por Tipo</h3>
           {graficoData.totalPorTipo &&
           (graficoData.totalPorTipo.KM ||
             graficoData.totalPorTipo.ABASTECIMENTO) ? (
             <Chart
               data={[
-                {
-                  name: "KM",
-                  total: graficoData.totalPorTipo.KM ?? 0,
-                },
+                { name: "KM", total: graficoData.totalPorTipo.KM ?? 0 },
                 {
                   name: "Abastecimento",
                   total: graficoData.totalPorTipo.ABASTECIMENTO ?? 0,
@@ -198,40 +210,15 @@ export default function AdminDashboard() {
             <p className="text-gray-500 text-sm">Sem dados para exibir.</p>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* LISTAGEM */}
       <section className="flex flex-col gap-3">
         {registros.length > 0 ? (
-          registros.map((r) => (
-            <div
-              key={r.id}
-              className=" rounded-xl shadow-md p-4 flex gap-4 items-center"
-            >
-              <Image
-                width={80}
-                height={80}
-                src={r.imagem}
-                alt="Registro"
-                className="rounded-lg object-cover"
-              />
-              <div className="text-sm ">
-                <p>
-                  <strong>{r.tipo}</strong> – {r.placa}
-                </p>
-                <p>
-                  {r.km} km – R${r.valor.toFixed(2)}
-                </p>
-                <p className="text-gray-400 text-xs">{r.usuario}</p>
-                <p className="text-gray-500 text-xs">
-                  {new Date(r.data).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          ))
-        ) : (
+          registros.map((r) => <RegistroItem key={r.id} r={r} />)
+        ) : !loading ? (
           <p className="text-gray-400">Nenhum registro encontrado.</p>
-        )}
+        ) : null}
       </section>
     </main>
   );

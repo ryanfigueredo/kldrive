@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  webpack(config) {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  webpack(config: {
+    module: { rules: { test: RegExp; issuer: RegExp; use: string[] }[] };
+  }) {
     config.module.rules.push({
       test: /\.svg$/i,
       issuer: /\.[jt]sx?$/,
@@ -9,7 +10,9 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
-  // outras configurações do Next.js que você já usar
+  images: {
+    domains: ["kl-drive-odometros.s3.us-east-1.amazonaws.com"],
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
