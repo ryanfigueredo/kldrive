@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "next/router";
 
 interface KmRecord {
   id: string;
@@ -52,6 +53,12 @@ export default function Dashboard() {
   const [km, setKm] = useState("");
   const [observacao, setObservacao] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const router = useRouter();
+
+  function irParaNovoAbastecimento() {
+    router.push("/abastecimento/novo");
+  }
 
   // Buscar dados iniciais e veículo vinculado do usuário
   useEffect(() => {
@@ -136,49 +143,14 @@ export default function Dashboard() {
         <p className="text-sm text-red-500 mb-4">Nenhum veículo selecionado.</p>
       )}
 
-      {/* Botão para abrir o Dialog de Registrar Quilometragem */}
-      <Dialog open={openKmDialog} onOpenChange={setOpenKmDialog}>
-        <DialogTrigger asChild>
-          <Button className="mb-6">Registrar Quilometragem</Button>
-        </DialogTrigger>
-        <DialogContent className="bg-neutral-100">
-          <DialogHeader>
-            <DialogTitle>Registrar Quilometragem</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmitKm} className="space-y-4">
-            <div>
-              <Label className="border-white" htmlFor="km">
-                Quilometragem
-              </Label>
-              <Input
-                id="km"
-                type="number"
-                value={km}
-                onChange={(e) => setKm(e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="observacao">Observação</Label>
-              <Input
-                id="observacao"
-                type="text"
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Salvando..." : "Salvar"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* AQUI pode colocar outro Dialog para registrar abastecimento (se quiser) */}
+      {/* Botão para registrar quilometragem */}
+      <Button
+        className="mb-6"
+        onClick={irParaNovoAbastecimento}
+        disabled={!vehicleInfo}
+      >
+        Registrar Quilometragem
+      </Button>
 
       {/* Últimas quilometragens */}
       <section className="mb-8">
