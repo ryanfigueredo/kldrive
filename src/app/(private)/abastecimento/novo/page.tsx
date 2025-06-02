@@ -69,7 +69,7 @@ export default function NovoAbastecimento() {
           placeholder="Litros abastecidos"
           value={litros}
           onChange={(e) => setLitros(e.target.value)}
-          className="border rounded-lg p-3 w-full text-black"
+          className="border rounded-lg p-3 w-full text-white"
         />
 
         <input
@@ -77,7 +77,7 @@ export default function NovoAbastecimento() {
           placeholder="Valor total (R$)"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
-          className="border rounded-lg p-3 w-full text-black"
+          className="border rounded-lg p-3 w-full text-white"
         />
 
         <Select value={situacao} onValueChange={setSituacao}>

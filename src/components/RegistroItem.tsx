@@ -1,5 +1,3 @@
-"use client";
-
 import React, { memo } from "react";
 import Image from "next/image";
 
@@ -14,7 +12,7 @@ interface Registro {
   data: string;
 }
 
-export const RegistroItem = memo(({ r }: { r: Registro }) => {
+const RegistroItemComponent = ({ r }: { r: Registro }) => {
   return (
     <div
       className="rounded-xl shadow-md p-4 flex gap-4 items-center"
@@ -41,4 +39,7 @@ export const RegistroItem = memo(({ r }: { r: Registro }) => {
       </div>
     </div>
   );
-});
+};
+
+export const RegistroItem = memo(RegistroItemComponent);
+RegistroItem.displayName = "RegistroItem";

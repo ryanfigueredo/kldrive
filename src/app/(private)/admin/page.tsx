@@ -91,7 +91,7 @@ export default function AdminDashboard() {
 
         setRegistros(registrosData ?? []);
         setGraficoData(dashboardData ?? {});
-      } catch (err) {
+      } catch {
         setError("Erro ao carregar dados do dashboard.");
       } finally {
         setLoading(false);
@@ -171,8 +171,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* GRÁFICOS */}
-      {/* <div className="grid md:grid-cols-2 gap-6 mb-10">
+      <div className="grid md:grid-cols-2 gap-6 mb-10">
         <div className="p-4 rounded-xl">
           <h3 className="text-lg font-semibold mb-2">KM por Dia</h3>
           {graficoData.kmPorData &&
@@ -210,9 +209,8 @@ export default function AdminDashboard() {
             <p className="text-gray-500 text-sm">Sem dados para exibir.</p>
           )}
         </div>
-      </div> */}
+      </div>
 
-      {/* LISTAGEM */}
       <section className="flex flex-col gap-3">
         {registros.length > 0 ? (
           registros.map((r) => <RegistroItem key={r.id} r={r} />)
