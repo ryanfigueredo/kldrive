@@ -8,6 +8,7 @@ import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
 import { RegistroItem } from "@/components/RegistroItem";
 import { FiltroDialog } from "@/components/FiltroDialog";
+import { ImageModal } from "@/components/ImageModal"; // importe seu modal
 
 interface Registro {
   id: string;
@@ -41,6 +42,10 @@ export default function AdminDashboard() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Estados para modal de imagem
+  const [modalImageSrc, setModalImageSrc] = useState<string | null>(null);
+  const [modalImageAlt, setModalImageAlt] = useState<string>("");
 
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -112,6 +117,18 @@ export default function AdminDashboard() {
     setEndDate(undefined);
   };
 
+  // Função para abrir modal com a imagem clicada
+  function handleImageClick(src: string, alt: string) {
+    setModalImageSrc(src);
+    setModalImageAlt(alt);
+  }
+
+  // Função para fechar modal
+  function closeModal() {
+    setModalImageSrc(null);
+    setModalImageAlt("");
+  }
+
   return (
     <main className="min-h-screen px-4 py-6">
       <h1 className="text-xl font-bold mb-6">Painel Administrativo</h1>
@@ -170,11 +187,22 @@ export default function AdminDashboard() {
 
       <section className="flex flex-col gap-3">
         {registros.length > 0 ? (
-          registros.map((r) => <RegistroItem key={r.id} r={r} />)
+          registros.map((r) => (
+            <RegistroItem key={r.id} r={r} onImageClick={handleImageClick} />
+          ))
         ) : !loading ? (
           <p className="text-gray-400">Nenhum registro encontrado.</p>
         ) : null}
       </section>
+
+      {/* Modal para imagem ampliada */}
+      {modalImageSrc && (
+        <ImageModal
+          src={modalImageSrc}
+          alt={modalImageAlt}
+          onClose={closeModal}
+        />
+      )}
     </main>
   );
 }

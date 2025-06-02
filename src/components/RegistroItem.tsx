@@ -12,7 +12,12 @@ interface Registro {
   data: string;
 }
 
-const RegistroItemComponent = ({ r }: { r: Registro }) => {
+interface RegistroItemProps {
+  r: Registro;
+  onImageClick: (src: string, alt: string) => void;
+}
+
+const RegistroItemComponent = ({ r, onImageClick }: RegistroItemProps) => {
   return (
     <div
       className="rounded-xl shadow-md p-4 flex gap-4 items-center"
@@ -23,7 +28,8 @@ const RegistroItemComponent = ({ r }: { r: Registro }) => {
         height={80}
         src={r.imagem}
         alt="Registro"
-        className="rounded-lg object-cover"
+        className="rounded-lg object-cover cursor-pointer"
+        onClick={() => onImageClick(r.imagem, `Foto do registro ${r.tipo}`)}
       />
       <div className="text-sm">
         <p>
