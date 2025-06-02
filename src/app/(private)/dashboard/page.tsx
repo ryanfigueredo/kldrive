@@ -80,12 +80,7 @@ export default function Dashboard() {
         <p className="text-sm text-red-500 mb-4">Nenhum veículo selecionado.</p>
       )}
 
-      {/* Botão para registrar quilometragem */}
-      <Button
-        className="mb-6"
-        onClick={irParaNovoAbastecimento}
-        disabled={!vehicleInfo}
-      >
+      <Button className="mb-6" onClick={irParaNovoAbastecimento}>
         Registrar Quilometragem
       </Button>
 

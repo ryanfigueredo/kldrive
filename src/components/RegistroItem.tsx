@@ -1,3 +1,5 @@
+"use client";
+
 import React, { memo } from "react";
 import Image from "next/image";
 
@@ -14,7 +16,7 @@ interface Registro {
 
 interface RegistroItemProps {
   r: Registro;
-  onImageClick: (src: string, alt: string) => void;
+  onImageClick?: (src: string) => void;
 }
 
 const RegistroItemComponent = ({ r, onImageClick }: RegistroItemProps) => {
@@ -23,14 +25,18 @@ const RegistroItemComponent = ({ r, onImageClick }: RegistroItemProps) => {
       className="rounded-xl shadow-md p-4 flex gap-4 items-center"
       key={r.id}
     >
-      <Image
-        width={80}
-        height={80}
-        src={r.imagem}
-        alt="Registro"
-        className="rounded-lg object-cover cursor-pointer"
-        onClick={() => onImageClick(r.imagem, `Foto do registro ${r.tipo}`)}
-      />
+      <div
+        className="cursor-pointer"
+        onClick={() => onImageClick && onImageClick(r.imagem)}
+      >
+        <Image
+          width={80}
+          height={80}
+          src={r.imagem}
+          alt={`${r.tipo} - ${r.placa}`}
+          className="rounded-lg object-cover"
+        />
+      </div>
       <div className="text-sm">
         <p>
           <strong>{r.tipo}</strong> – {r.placa}
