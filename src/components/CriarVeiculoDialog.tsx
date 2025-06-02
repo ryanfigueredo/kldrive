@@ -59,11 +59,9 @@ export function CriarVeiculoDialog({ onCreated }: { onCreated?: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-white">
-          Criar Veículo
-        </Button>
+        <Button variant="outline">Criar Veículo</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="bg-white">
         <DialogHeader>
           <DialogTitle>Novo Veículo</DialogTitle>
         </DialogHeader>

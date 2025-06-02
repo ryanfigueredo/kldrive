@@ -44,13 +44,13 @@ export function FiltroDialog({
 }: FiltroDialogProps) {
   return (
     <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-      <DialogTrigger asChild className="bg-white">
+      <DialogTrigger asChild>
         <button className="bg-[#c8d22c] px-4 py-2 rounded-md font-semibold">
           Filtros
         </button>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="bg-white">
         <DialogHeader>
           <DialogTitle>Filtros</DialogTitle>
         </DialogHeader>
