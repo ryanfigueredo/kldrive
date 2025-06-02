@@ -3,17 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useRouter } from "next/router";
 
 interface KmRecord {
@@ -44,23 +34,14 @@ interface Vehicle {
 export default function Dashboard() {
   const [kmRecords, setKmRecords] = useState<KmRecord[]>([]);
   const [fuelRecords, setFuelRecords] = useState<FuelRecord[]>([]);
-
   const { data: session } = useSession();
   const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
-
-  // Dialog e formulário de quilometragem
-  const [openKmDialog, setOpenKmDialog] = useState(false);
-  const [km, setKm] = useState("");
-  const [observacao, setObservacao] = useState("");
-  const [loading, setLoading] = useState(false);
-
   const router = useRouter();
 
   function irParaNovoAbastecimento() {
     router.push("/abastecimento/novo");
   }
 
-  // Buscar dados iniciais e veículo vinculado do usuário
   useEffect(() => {
     fetch("/api/historico")
       .then((res) => res.json())
@@ -85,50 +66,6 @@ export default function Dashboard() {
       setVehicleInfo(null);
     }
   }, [session]);
-
-  async function handleSubmitKm(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!km || !vehicleInfo) {
-      alert("Preencha a quilometragem e tenha um veículo selecionado.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("km", km);
-      formData.append("observacao", observacao);
-      formData.append("veiculoId", vehicleInfo.id);
-
-      // Se for foto, pode adicionar aqui, ex:
-      // formData.append("foto", file);
-
-      const res = await fetch("/api/km-records", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        alert(error.error || "Erro ao registrar quilometragem.");
-      } else {
-        alert("Quilometragem registrada com sucesso!");
-        setKm("");
-        setObservacao("");
-        setOpenKmDialog(false);
-
-        const updated = await fetch("/api/historico").then((r) => r.json());
-        setKmRecords(updated.kmRecords ?? []);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Erro inesperado.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <main className="min-h-screen px-4 py-6  ">
