@@ -11,7 +11,14 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ["kl-drive-odometros.s3.us-east-1.amazonaws.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "kl-drive-odometros.s3.us-east-1.amazonaws.com",
+        port: "",
+        pathname: "/**",
+      },
+    ],
   },
 };
 
