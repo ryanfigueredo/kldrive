@@ -9,5 +9,5 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  redirect("/dashboard"); // ou outra rota padrão autenticada
+  redirect("/dashboard");
 }

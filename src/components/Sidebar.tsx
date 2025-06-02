@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   Home,
-  Car,
   Fuel,
   BarChart2,
   User,
@@ -19,11 +18,7 @@ export function Sidebar() {
           icon={<Home size={24} />}
           label="Dashboard"
         />
-        <SidebarNavLink
-          href="/quilometragem/novo"
-          icon={<Car size={24} />}
-          label="KM"
-        />
+
         <SidebarNavLink
           href="/abastecimento/novo"
           icon={<Fuel size={24} />}

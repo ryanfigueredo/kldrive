@@ -111,7 +111,7 @@ export default function Dashboard() {
         setKm("");
         setObservacao("");
         setOpenKmDialog(false);
-        // Atualize a lista de registros aqui para refletir a nova quilometragem
+
         const updated = await fetch("/api/historico").then((r) => r.json());
         setKmRecords(updated.kmRecords ?? []);
       }
@@ -141,13 +141,15 @@ export default function Dashboard() {
         <DialogTrigger asChild>
           <Button className="mb-6">Registrar Quilometragem</Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="bg-neutral-100">
           <DialogHeader>
             <DialogTitle>Registrar Quilometragem</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmitKm} className="space-y-4">
             <div>
-              <Label htmlFor="km">Quilometragem</Label>
+              <Label className="border-white" htmlFor="km">
+                Quilometragem
+              </Label>
               <Input
                 id="km"
                 type="number"

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Home, Car, Fuel, BarChart2, User } from "lucide-react";
+import { Home, Fuel, BarChart2, User } from "lucide-react";
 
 export default function MobileNav() {
   const { data: session } = useSession();
@@ -12,13 +12,6 @@ export default function MobileNav() {
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md bg-[#242424] text-white py-3 px-6 roundedfull shadow-lg flex justify-between items-center">
       <Link href="/dashboard" className="flex flex-col items-center gap-1 ">
         <Home className="w-5 h-5" />
-      </Link>
-
-      <Link
-        href="/quilometragem/novo"
-        className="flex flex-col items-center gap-1 "
-      >
-        <Car className="w-5 h-5" />
       </Link>
 
       <Link

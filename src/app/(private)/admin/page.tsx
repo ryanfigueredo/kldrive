@@ -4,11 +4,8 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
-
-import Chart from "@/components/Chart";
 import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
-
 import { RegistroItem } from "@/components/RegistroItem";
 import { FiltroDialog } from "@/components/FiltroDialog";
 
@@ -168,46 +165,6 @@ export default function AdminDashboard() {
           <h3 className="text-2xl font-bold">
             {graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
           </h3>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6 mb-10">
-        <div className="p-4 rounded-xl">
-          <h3 className="text-lg font-semibold mb-2">KM por Dia</h3>
-          {graficoData.kmPorData &&
-          Object.keys(graficoData.kmPorData).length > 0 ? (
-            <Chart
-              data={Object.entries(graficoData.kmPorData).map(([dia, km]) => ({
-                name: dia,
-                total: Number(km),
-              }))}
-              colors={["lime"]}
-              type="line"
-            />
-          ) : (
-            <p className="text-gray-500 text-sm">Sem dados para exibir.</p>
-          )}
-        </div>
-
-        <div className="p-4 rounded-xl">
-          <h3 className="text-lg font-semibold mb-2">Distribuição por Tipo</h3>
-          {graficoData.totalPorTipo &&
-          (graficoData.totalPorTipo.KM ||
-            graficoData.totalPorTipo.ABASTECIMENTO) ? (
-            <Chart
-              data={[
-                { name: "KM", total: graficoData.totalPorTipo.KM ?? 0 },
-                {
-                  name: "Abastecimento",
-                  total: graficoData.totalPorTipo.ABASTECIMENTO ?? 0,
-                },
-              ]}
-              colors={["lime", "violet"]}
-              type="pie"
-            />
-          ) : (
-            <p className="text-gray-500 text-sm">Sem dados para exibir.</p>
-          )}
         </div>
       </div>
 
