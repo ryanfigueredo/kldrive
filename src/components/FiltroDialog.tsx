@@ -44,7 +44,7 @@ export function FiltroDialog({
 }: FiltroDialogProps) {
   return (
     <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger asChild className="bg-white">
         <button className="bg-[#c8d22c] px-4 py-2 rounded-md font-semibold">
           Filtros
         </button>

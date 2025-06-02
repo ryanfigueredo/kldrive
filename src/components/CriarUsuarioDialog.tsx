@@ -84,7 +84,7 @@ export function CriarUsuarioDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger asChild className="bg-white">
         <Button>Criar Usuário</Button>
       </DialogTrigger>
       <DialogContent>
