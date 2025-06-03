@@ -8,7 +8,7 @@ export default withAuth({
 
 export const config = {
   matcher: [
-    // Protege tudo, exceto login
-    "/((?!login|api|_next/static|_next/image|favicon.ico).*)",
+    // Protege tudo, exceto login e arquivos estáticos como imagens SVG, PNG, JPG, etc.
+    "/((?!login|api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
