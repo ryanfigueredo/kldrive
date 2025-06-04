@@ -8,6 +8,7 @@ import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
 import { RegistroItem } from "@/components/RegistroItem";
 import { FiltroDialog } from "@/components/FiltroDialog";
+import Image from "next/image";
 
 interface Registro {
   id: string;
@@ -195,10 +196,12 @@ export default function AdminDashboard() {
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 cursor-zoom-out"
           onClick={() => setModalImgSrc(null)}
         >
-          <img
+          <Image
             src={modalImgSrc}
             alt={modalImgAlt}
             className="max-w-[90vw] max-h-[90vh] rounded-lg"
+            width={800}
+            height={600}
           />
         </div>
       )}

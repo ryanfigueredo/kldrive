@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React from "react";
 
 interface ImageModalProps {
@@ -14,11 +15,13 @@ export function ImageModal({ src, alt, onClose }: ImageModalProps) {
       className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
       onClick={onClose}
     >
-      <img
+      <Image
         src={src}
         alt={alt}
         className="max-w-full max-h-full rounded-lg shadow-lg"
         onClick={(e) => e.stopPropagation()} // para não fechar ao clicar na imagem
+        width={800}
+        height={600}
       />
       <button
         onClick={onClose}

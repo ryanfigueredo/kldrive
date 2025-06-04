@@ -94,10 +94,12 @@ export default function Dashboard() {
                 key={r.id}
                 className="bg-white p-3 rounded-xl shadow-md flex gap-4 items-center"
               >
-                <img
+                <Image
                   src={r.photoUrl}
                   alt="Odômetro"
                   className="w-20 h-20 object-cover rounded-lg"
+                  width={80}
+                  height={80}
                 />
                 <div className="text-sm text-gray-800">
                   <p>

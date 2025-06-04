@@ -1,6 +1,7 @@
 // src/components/ImageUpload.tsx
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 
 interface ImageUploadProps {
@@ -34,10 +35,12 @@ export default function ImageUpload({ onChange }: ImageUploadProps) {
         className="bg-gray-200 p-4 w-full rounded-xl text-center text-gray-700"
       >
         {preview ? (
-          <img
+          <Image
             src={preview}
             alt="Preview"
             className="w-full h-40 object-cover rounded-xl"
+            width={320}
+            height={240}
           />
         ) : (
           "Selecionar Foto do Odômetro"
