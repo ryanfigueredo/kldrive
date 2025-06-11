@@ -15,9 +15,11 @@ model User {
   role      Role     @default(COLABORADOR)
   createdAt DateTime @default(now())
 
-  avatarUrl String? 
+  avatarUrl String?
 
-  vehicles    Vehicle[]
+  vehicleId String?   @unique                      // ← MARCA COMO ÚNICO
+  vehicle   Vehicle?  @relation(fields: [vehicleId], references: [id])
+
   kmRecords   KmRecord[]
   fuelRecords FuelRecord[]
 }
@@ -29,14 +31,16 @@ model Vehicle {
   ano             Int?
   tipoCombustivel TipoCombustivel
 
-  userId String? // <-- Adicionado
-  user   User?   @relation(fields: [userId], references: [id])
+  userId  String?  @unique
+  user    User?
 
   kmRecords   KmRecord[]
   fuelRecords FuelRecord[]
 
   createdAt DateTime @default(now())
 }
+
+
 
 model KmRecord {
   id         String   @id @default(uuid())

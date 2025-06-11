@@ -1,4 +1,3 @@
-// src/pages/api/veiculos/[id].ts
 import { prisma } from "@/lib/prisma";
 import { NextApiRequest, NextApiResponse } from "next";
 

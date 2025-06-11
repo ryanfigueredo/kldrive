@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await prisma.vehicle.update({
-      where: { id: vehicleId },
-      data: { user: { connect: { id: userId } } },
+    await prisma.user.update({
+      where: { id: userId },
+      data: { vehicleId },
     });
 
     return NextResponse.json({ success: true });

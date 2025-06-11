@@ -20,7 +20,7 @@ export default function ClientLayout({ session, children }: ClientLayoutProps) {
       {isLoggedIn && (
         <>
           <div className="hidden md:flex fixed top-0 left-0 bottom-0 w-64">
-            <Sidebar />
+            <Sidebar session={session} /> {/* ✅ Sessão passada direto */}
           </div>
 
           <div className="fixed top-0 left-0 right-0 h-16 z-50">
@@ -28,7 +28,7 @@ export default function ClientLayout({ session, children }: ClientLayoutProps) {
           </div>
 
           <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md">
-            <MobileNav />
+            <MobileNav session={session} />
           </div>
         </>
       )}

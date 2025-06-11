@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { Session } from "next-auth";
 
 interface KmRecord {
   id: string;
@@ -31,10 +31,9 @@ interface Vehicle {
   modelo: string | null;
 }
 
-export default function Dashboard() {
+export default function Dashboard({ session }: { session: Session }) {
   const [kmRecords, setKmRecords] = useState<KmRecord[]>([]);
   const [fuelRecords, setFuelRecords] = useState<FuelRecord[]>([]);
-  const { data: session } = useSession();
   const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
   const router = useRouter();
 
@@ -54,9 +53,8 @@ export default function Dashboard() {
         setFuelRecords([]);
       });
 
-    // Pega veículo do usuário logado da sessão (veículos vem pelo next-auth)
-    if (session?.user?.vehicles && session.user.vehicles.length > 0) {
-      const v = session.user.vehicles[0];
+    if (session?.user?.vehicle) {
+      const v = session.user.vehicle;
       setVehicleInfo({
         id: v.id,
         placa: v.placa,
@@ -68,7 +66,7 @@ export default function Dashboard() {
   }, [session]);
 
   return (
-    <main className="min-h-screen px-4 py-6  ">
+    <main className="min-h-screen px-4 py-6">
       <h1 className="text-xl font-bold mb-1">Bem-vindo à KL Drive</h1>
 
       {vehicleInfo ? (
@@ -88,7 +86,7 @@ export default function Dashboard() {
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-2">Últimas Quilometragens</h2>
         <div className="flex flex-col gap-3">
-          {Array.isArray(kmRecords) && kmRecords.length > 0 ? (
+          {kmRecords.length > 0 ? (
             kmRecords.map((r) => (
               <div
                 key={r.id}
@@ -124,7 +122,7 @@ export default function Dashboard() {
       <section>
         <h2 className="text-lg font-semibold mb-2">Últimos Abastecimentos</h2>
         <div className="flex flex-col gap-3">
-          {Array.isArray(fuelRecords) && fuelRecords.length > 0 ? (
+          {fuelRecords.length > 0 ? (
             fuelRecords.map((r) => (
               <div
                 key={r.id}

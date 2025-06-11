@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
         usuario: r.user?.email ?? "—",
         valor: 0,
         km: r.km,
-        imagem: r.photoUrl,
+        imagem: r.photoUrl ?? "", // garantido string
         data: r.createdAt,
       }))
     );
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
         usuario: r.user?.email ?? "—",
         valor: r.valor,
         km: r.kmAtual,
-        imagem: r.photoUrl,
+        imagem: r.photoUrl ?? "", // garantido string
         data: r.createdAt,
       }))
     );

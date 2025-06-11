@@ -27,16 +27,23 @@ const RegistroItemComponent = ({ r, onImageClick }: RegistroItemProps) => {
     >
       <div
         className="cursor-pointer"
-        onClick={() => onImageClick && onImageClick(r.imagem)}
+        onClick={() => r.imagem && onImageClick?.(r.imagem)}
       >
-        <Image
-          width={80}
-          height={80}
-          src={r.imagem}
-          alt={`${r.tipo} - ${r.placa}`}
-          className="rounded-lg object-cover"
-        />
+        {r.imagem ? (
+          <Image
+            width={80}
+            height={80}
+            src={r.imagem}
+            alt={`${r.tipo} - ${r.placa}`}
+            className="rounded-lg object-cover w-20 h-20 hover:scale-105 transition-transform"
+          />
+        ) : (
+          <div className="w-20 h-20 bg-gray-200 text-gray-400 text-xs flex items-center justify-center rounded-lg">
+            Sem imagem
+          </div>
+        )}
       </div>
+
       <div className="text-sm">
         <p>
           <strong>{r.tipo}</strong> – {r.placa}

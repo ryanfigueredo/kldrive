@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Session } from "next-auth";
 import { useDebounce } from "@/hooks/useDebounce";
 import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
 import { RegistroItem } from "@/components/RegistroItem";
 import { FiltroDialog } from "@/components/FiltroDialog";
-import Image from "next/image";
 
 interface Registro {
   id: string;
@@ -31,7 +31,7 @@ interface GraficoData {
   kmPorData?: Record<string, number>;
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ session }: { session: Session }) {
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [tipo, setTipo] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -42,15 +42,11 @@ export default function AdminDashboard() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Para o modal da imagem
   const [modalImgSrc, setModalImgSrc] = useState<string | null>(null);
   const [modalImgAlt, setModalImgAlt] = useState<string>("");
 
-  const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Debounce para evitar chamadas em excesso
   const debouncedTipo = useDebounce(tipo, 500);
   const debouncedStartDate = useDebounce(startDate, 500);
   const debouncedEndDate = useDebounce(endDate, 500);
@@ -58,13 +54,13 @@ export default function AdminDashboard() {
   const debouncedVeiculo = useDebounce(veiculo, 500);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (session?.user?.role !== "ADMIN") {
+    if (!session) return;
+
+    if (session.user.role !== "ADMIN") {
       alert("Acesso restrito ao administrador.");
       router.push("/");
     }
-  }, [status, session, router]);
+  }, [session, router]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -144,7 +140,6 @@ export default function AdminDashboard() {
       {loading && <p>Carregando dados...</p>}
       {error && <p className="text-red-600">{error}</p>}
 
-      {/* TOTALIZADORES */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="p-4 rounded-xl">
           <p className="text-sm text-gray-400">Total KM Rodado</p>
@@ -190,7 +185,6 @@ export default function AdminDashboard() {
         ) : null}
       </section>
 
-      {/* Modal para imagem */}
       {modalImgSrc && (
         <div
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 cursor-zoom-out"

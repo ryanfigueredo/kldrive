@@ -1,67 +1,13 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import NextAuth, {
-  AuthOptions,
-  User as NextAuthUser,
-  Session as NextAuthSession,
-} from "next-auth";
-import type { JWT } from "next-auth/jwt";
-
+import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { prisma } from "@/lib/prisma";
 
+// Handler para App Router
 const handler = (req: NextApiRequest, res: NextApiResponse) => {
   return NextAuth(authOptions)(req, res);
 };
-
-declare module "next-auth" {
-  interface Session {
-    user: {
-      image: string;
-      role?: string;
-      vehicles?: {
-        id: string;
-        placa: string;
-        modelo: string | null;
-      }[];
-      name?: string | null;
-      email?: string | null;
-    };
-  }
-
-  interface User {
-    role?: string;
-    vehicles?: {
-      id: string;
-      placa: string;
-      modelo: string | null;
-    }[];
-  }
-}
-
-interface AuthUser extends NextAuthUser {
-  role?: string;
-  vehicles?: {
-    id: string;
-    placa: string;
-    modelo: string | null;
-  }[];
-}
-
-interface SessionUser {
-  role?: string;
-  vehicles?: {
-    id: string;
-    placa: string;
-    modelo: string | null;
-  }[];
-  name?: string | null;
-  email?: string | null;
-}
-
-interface CustomSession extends Omit<NextAuthSession, "user"> {
-  user: SessionUser;
-}
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -71,63 +17,73 @@ export const authOptions: AuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Senha", type: "password" },
       },
-      async authorize(credentials): Promise<AuthUser | null> {
-        if (!credentials?.email || !credentials?.password) return null;
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials.password) return null;
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          include: { vehicles: true },
+          include: { vehicle: true }, // veículo vinculado
         });
 
         if (!user) return null;
 
-        const isValidPassword = await bcrypt.compare(
+        const isValid = await bcrypt.compare(
           credentials.password,
           user.password
         );
-
-        if (!isValidPassword) return null;
+        if (!isValid) return null;
 
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
-          vehicles: user.vehicles.map((v) => ({
-            id: v.id,
-            placa: v.placa,
-            modelo: v.modelo,
-          })),
+          image: user.avatarUrl ?? "",
+          vehicle: user.vehicle
+            ? {
+                id: user.vehicle.id,
+                placa: user.vehicle.placa,
+                modelo: user.vehicle.modelo ?? null,
+              }
+            : null,
         };
       },
     }),
   ],
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+  },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: AuthUser }) {
+    async jwt({ token, user }) {
       if (user) {
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
         token.role = user.role;
-        token.vehicles = user.vehicles ?? [];
+        token.image = user.image;
+        token.vehicle = user.vehicle ?? null;
       }
       return token;
     },
-    async session({
-      session,
-      token,
-    }: {
-      session: NextAuthSession;
-      token: JWT;
-    }) {
-      const customSession = session as CustomSession;
-
-      if (customSession.user) {
-        customSession.user.role = token.role as string;
-        customSession.user.vehicles = Array.isArray(token.vehicles)
-          ? token.vehicles
-          : [];
-      }
-      return customSession;
+    async session({ session, token }) {
+      session.user.id = token.id as string;
+      session.user.role = token.role as string;
+      session.user.image = token.image as string;
+      session.user.vehicle =
+        token.vehicle &&
+        typeof token.vehicle === "object" &&
+        "id" in token.vehicle &&
+        "placa" in token.vehicle
+          ? {
+              id: (token.vehicle as any).id,
+              placa: (token.vehicle as any).placa,
+              modelo: (token.vehicle as any).modelo ?? null,
+            }
+          : null;
+      return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,

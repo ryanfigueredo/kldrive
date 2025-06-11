@@ -42,13 +42,24 @@ export default function UsuariosPage() {
     const vehicleId = vinculo[userId];
     if (!vehicleId) return;
 
-    await fetch("/api/admin/vincular-veiculo", {
-      method: "POST",
-      body: JSON.stringify({ userId, vehicleId }),
-      headers: { "Content-Type": "application/json" },
-    });
+    try {
+      const res = await fetch("/api/admin/vincular-veiculo", {
+        method: "POST",
+        body: JSON.stringify({ userId, vehicleId }),
+        headers: { "Content-Type": "application/json" },
+      });
 
-    alert("Veículo vinculado com sucesso!");
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Erro ao vincular veículo.");
+        return;
+      }
+
+      alert("Veículo vinculado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      alert("Erro inesperado.");
+    }
   }
 
   return (

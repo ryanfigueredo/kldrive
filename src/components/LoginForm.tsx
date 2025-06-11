@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -20,13 +20,14 @@ export function LoginForm() {
 
     const res = await signIn("credentials", {
       email,
+      password,
       redirect: false,
     });
 
     if (res?.ok) {
-      router.push("/");
+      window.location.href = "/"; // ✅ força reload completo com sessão SSR nova
     } else {
-      alert("E-mail inválido ou não autorizado.");
+      alert("E-mail ou senha inválidos.");
     }
 
     setLoading(false);
@@ -34,7 +35,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card className="bg-white text-black shadow-sm rounded-lg ">
+      <Card className="bg-white text-black shadow-sm rounded-lg">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
         </CardHeader>
@@ -48,21 +49,23 @@ export function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@klfacilities.com.br"
               required
-              className="border border-gray-300 focus:border-green-500 focus:ring-blue-500 focus:ring-1 rounded-md"
+              className="border border-gray-300 focus:border-green-500 focus:ring-green-500 focus:ring-1 rounded-md"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="email">Senha</Label>
+            <Label htmlFor="password">Senha</Label>
             <Input
+              id="password"
               type="password"
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="border border-gray-300 focus:border-green-500 focus:ring-blue-500 focus:ring-1 rounded-md"
+              className="border border-gray-300 focus:border-green-500 focus:ring-green-500 focus:ring-1 rounded-md"
             />
           </div>
+
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Entrando..." : "Entrar"}
           </Button>

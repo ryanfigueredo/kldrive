@@ -1,8 +1,6 @@
 import { Figtree } from "next/font/google";
 import "./globals.css";
 
-import SessionWrapper from "@/components/SessionWrapper";
-
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import ClientLayout from "@/components/ClientLayout";
@@ -22,9 +20,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${figtree.className} antialiased`}>
-        <SessionWrapper>
-          <ClientLayout session={session}>{children}</ClientLayout>
-        </SessionWrapper>
+        <ClientLayout session={session}>{children}</ClientLayout>
       </body>
     </html>
   );
