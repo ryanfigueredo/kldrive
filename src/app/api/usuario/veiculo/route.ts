@@ -1,7 +1,5 @@
-// src/app/api/usuario/veiculo/route.ts (Next.js app router)
-
-import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -13,15 +11,13 @@ export async function GET(req: NextRequest) {
   const user = await prisma.user.findUnique({
     where: { id: token.sub ?? "" },
     include: {
-      vehicles: true, // inclui veículos vinculados
+      vehicle: true, // ✅ relacionamento 1:1
     },
   });
 
-  if (!user || user.vehicles.length === 0) {
+  if (!user || !user.vehicle) {
     return NextResponse.json(null); // sem veículo vinculado
   }
 
-  // retorna o primeiro veículo vinculado (se for 1:1)
-  const vehicle = user.vehicles[0];
-  return NextResponse.json(vehicle);
+  return NextResponse.json(user.vehicle);
 }

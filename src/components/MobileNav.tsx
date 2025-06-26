@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Fuel, BarChart2, LogOut } from "lucide-react";
+import { Home, Fuel, BarChart2 } from "lucide-react";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { useState } from "react";

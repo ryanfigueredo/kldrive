@@ -2,9 +2,8 @@
 
 import { Session } from "next-auth";
 import { ReactNode } from "react";
-
 import { Sidebar } from "./Sidebar";
-import Header from "./header";
+import Header from "./Header";
 import MobileNav from "./MobileNav";
 
 interface ClientLayoutProps {

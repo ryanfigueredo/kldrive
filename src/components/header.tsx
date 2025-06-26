@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Bell, Calendar, Plus } from "lucide-react";
+
+import { ThemeToggle } from "./ThemeToggle";
 
 export default function Header() {
   return (
@@ -13,26 +14,7 @@ export default function Header() {
 
       {/* Ações e perfil */}
       <div className="flex items-center gap-4">
-        <button
-          className="roundedmd bg-[#c8d22c] p-2 hover:bg-[#a6b51f] transition-colors"
-          aria-label="Adicionar"
-        >
-          <Plus className="w-5 h-5 text-gray-900" />
-        </button>
-
-        <button
-          className="roundedsm bg-gray-800 p-2 hover:bg-gray-700 transition-colors"
-          aria-label="Notificações"
-        >
-          <Bell className="w-5 h-5 " />
-        </button>
-
-        <button
-          className="roundedsm bg-gray-800 p-2 hover:bg-gray-700 transition-colors"
-          aria-label="Calendário"
-        >
-          <Calendar className="w-5 h-5 " />
-        </button>
+        <ThemeToggle />
       </div>
     </header>
   );

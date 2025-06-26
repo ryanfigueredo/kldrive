@@ -1,7 +1,6 @@
 "use client";
 
-import { signIn, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

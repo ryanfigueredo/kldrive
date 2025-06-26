@@ -23,8 +23,14 @@ export async function GET(req: NextRequest) {
   if (veiculo) filtros.vehicleId = veiculo;
 
   const [km, fuel] = await Promise.all([
-    prisma.kmRecord.findMany({ where: filtros }),
-    prisma.fuelRecord.findMany({ where: filtros }),
+    prisma.kmRecord.findMany({
+      where: filtros,
+      include: { user: true },
+    }),
+    prisma.fuelRecord.findMany({
+      where: filtros,
+      include: { user: true },
+    }),
   ]);
 
   const totalKm = km.reduce((acc, r) => acc + r.km, 0);
@@ -37,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   const kmPorData: Record<string, number> = {};
   km.forEach((r) => {
-    const dia = new Date(r.createdAt).toLocaleDateString("pt-BR");
+    const dia = r.createdAt.toISOString().split("T")[0];
     kmPorData[dia] = (kmPorData[dia] ?? 0) + r.km;
   });
 
@@ -48,11 +54,28 @@ export async function GET(req: NextRequest) {
       (abastecimentoPorVeiculo[placa] ?? 0) + r.valor;
   });
 
+  const abastecimentoPorDataPorUsuario: Record<
+    string,
+    Record<string, number>
+  > = {};
+  fuel.forEach((r) => {
+    const dia = r.createdAt.toISOString().split("T")[0];
+    const usuario = r.user?.email ?? "desconhecido";
+
+    if (!abastecimentoPorDataPorUsuario[dia]) {
+      abastecimentoPorDataPorUsuario[dia] = {};
+    }
+
+    abastecimentoPorDataPorUsuario[dia][usuario] =
+      (abastecimentoPorDataPorUsuario[dia][usuario] ?? 0) + r.valor;
+  });
+
   return NextResponse.json({
     totalKm,
     totalValorAbastecido,
     totalPorTipo,
     kmPorData,
     abastecimentoPorVeiculo,
+    abastecimentoPorDataPorUsuario,
   });
 }

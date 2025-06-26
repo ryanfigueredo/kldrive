@@ -1,9 +1,10 @@
 import { Figtree } from "next/font/google";
 import "./globals.css";
-
+import { type Session } from "next-auth";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import ClientLayout from "@/components/ClientLayout";
+import { ThemeProvider } from "next-themes";
 
 const figtree = Figtree({
   subsets: ["latin"],
@@ -15,12 +16,18 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
+  const session: Session | null = await getServerSession(authOptions);
 
   return (
     <html lang="en">
       <body className={`${figtree.className} antialiased`}>
-        <ClientLayout session={session}>{children}</ClientLayout>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+        >
+          <ClientLayout session={session}>{children}</ClientLayout>
+        </ThemeProvider>
       </body>
     </html>
   );

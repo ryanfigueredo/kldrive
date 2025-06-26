@@ -1,7 +1,7 @@
-import { AuthOptions } from "next-auth";
+import type { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { prisma } from "@/lib/prisma";
 
 interface VehicleSession {
   id: string;
@@ -9,12 +9,12 @@ interface VehicleSession {
   modelo: string | null;
 }
 
-interface UserWithVehicleAndAvatar {
+interface UserWithVehicle {
   id: string;
-  email: string;
   name: string;
+  email: string;
   role: string;
-  avatarUrl?: string | null;
+  image?: string;
   vehicle?: VehicleSession | null;
 }
 
@@ -26,14 +26,12 @@ export const authOptions: AuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Senha", type: "password" },
       },
-      async authorize(credentials): Promise<UserWithVehicleAndAvatar | null> {
-        if (!credentials?.email || !credentials?.password) return null;
+      async authorize(credentials): Promise<UserWithVehicle | null> {
+        if (!credentials?.email || !credentials.password) return null;
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          include: {
-            vehicle: true,
-          },
+          include: { vehicle: true },
         });
 
         if (!user) return null;
@@ -44,21 +42,19 @@ export const authOptions: AuthOptions = {
         );
         if (!isValid) return null;
 
-        const vehicle: VehicleSession | null = user.vehicle
-          ? {
-              id: user.vehicle.id,
-              placa: user.vehicle.placa,
-              modelo: user.vehicle.modelo ?? null,
-            }
-          : null;
-
         return {
           id: user.id,
-          email: user.email,
           name: user.name,
+          email: user.email,
           role: user.role,
-          avatarUrl: user.avatarUrl ?? null,
-          vehicle,
+          image: user.avatarUrl ?? "",
+          vehicle: user.vehicle
+            ? {
+                id: user.vehicle.id,
+                placa: user.vehicle.placa,
+                modelo: user.vehicle.modelo ?? null,
+              }
+            : null,
         };
       },
     }),
@@ -72,32 +68,25 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.name = user.name;
-        token.email = user.email;
-        token.role = user.role;
-        token.avatarUrl = (user as UserWithVehicleAndAvatar).avatarUrl ?? null;
-        token.vehicle = (user as UserWithVehicleAndAvatar).vehicle ?? null;
+        const u = user as UserWithVehicle;
+        token.id = u.id;
+        token.name = u.name;
+        token.email = u.email;
+        token.role = u.role;
+        token.image = u.image;
+        token.vehicle = u.vehicle ?? null;
       }
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id as string;
-      session.user.name = token.name as string;
-      session.user.email = token.email as string;
-      session.user.role = token.role as string;
-      session.user.image =
-        typeof token.avatarUrl === "string"
-          ? token.avatarUrl
-          : session.user.image ?? "";
-      session.user.vehicle =
-        token.vehicle &&
-        typeof token.vehicle === "object" &&
-        "id" in token.vehicle &&
-        "placa" in token.vehicle &&
-        "modelo" in token.vehicle
-          ? (token.vehicle as VehicleSession)
-          : null;
+      session.user = {
+        id: token.id as string,
+        name: token.name as string,
+        email: token.email as string,
+        role: token.role as string,
+        image: token.image as string,
+        vehicle: token.vehicle ?? null,
+      };
       return session;
     },
   },

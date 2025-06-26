@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { uploadToS3Buffer } from "@/lib/s3";
 

@@ -1,11 +1,13 @@
-import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const token = await getToken({ req });
-  if (!token)
+  const token = await getToken({ req: req });
+
+  if (!token) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  }
 
   const { searchParams } = new URL(req.url);
   const tipo = searchParams.get("tipo");
@@ -35,7 +37,7 @@ export async function GET(req: NextRequest) {
         usuario: r.user?.email ?? "—",
         valor: 0,
         km: r.km,
-        imagem: r.photoUrl ?? "", // garantido string
+        imagem: r.photoUrl ?? "",
         data: r.createdAt,
       }))
     );
@@ -55,7 +57,7 @@ export async function GET(req: NextRequest) {
         usuario: r.user?.email ?? "—",
         valor: r.valor,
         km: r.kmAtual,
-        imagem: r.photoUrl ?? "", // garantido string
+        imagem: r.photoUrl ?? "",
         data: r.createdAt,
       }))
     );
