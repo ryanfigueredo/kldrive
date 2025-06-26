@@ -39,6 +39,7 @@ export function CriarUsuarioDialog({
   const [vehicleId, setVehicleId] = useState<string>("");
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/veiculos")
@@ -54,7 +55,7 @@ export function CriarUsuarioDialog({
       const res = await fetch("/api/admin/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, role, vehicleId }),
+        body: JSON.stringify({ name, email, password, role, vehicleId }),
       });
 
       if (res.ok) {
@@ -87,14 +88,15 @@ export function CriarUsuarioDialog({
       <DialogTrigger asChild className="">
         <Button>Criar Usuário</Button>
       </DialogTrigger>
-      <DialogContent className="bg-white">
+      <DialogContent className="bg-white dark:bg-zinc-900  text-black dark:text-white">
         <DialogHeader>
           <DialogTitle>Novo Usuário</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 dark:border-white">
           <div>
             <Label>Nome</Label>
             <Input
+              className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -105,11 +107,24 @@ export function CriarUsuarioDialog({
           <div>
             <Label>Email</Label>
             <Input
+              className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={loading}
               type="email"
+            />
+          </div>
+
+          <div>
+            <Label>Senha</Label>
+            <Input
+              className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
             />
           </div>
 
@@ -120,7 +135,7 @@ export function CriarUsuarioDialog({
               onValueChange={(val) => setRole(val as Role)}
               disabled={loading}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground w-full">
                 <SelectValue placeholder="Selecione o cargo" />
               </SelectTrigger>
               <SelectContent>
@@ -138,7 +153,7 @@ export function CriarUsuarioDialog({
               onValueChange={(val) => setVehicleId(val)}
               disabled={loading}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground">
                 <SelectValue placeholder="Selecione o veículo" />
               </SelectTrigger>
               <SelectContent>

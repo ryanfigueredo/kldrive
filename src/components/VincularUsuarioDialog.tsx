@@ -87,7 +87,7 @@ export function VincularUsuarioDialog({ onVincular }: Props) {
           Vincular Usuário
         </Button>
       </DialogTrigger>
-      <DialogContent className="text-white max-w-2xl">
+      <DialogContent className="max-w-2xl bg-white dark:bg-zinc-900 text-black dark:text-white border border-border shadow-xl rounded-xl">
         <DialogHeader>
           <DialogTitle>Vincular Veículo a Usuário</DialogTitle>
         </DialogHeader>
@@ -97,7 +97,9 @@ export function VincularUsuarioDialog({ onVincular }: Props) {
               <div
                 key={user.id}
                 className={`p-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4 ${
-                  user.role === "ADMIN" ? "bg-gray-900 text-white" : "bg-muted"
+                  user.role === "ADMIN"
+                    ? ""
+                    : "bg-secondary-foreground dark:bg-zinc-800"
                 }`}
               >
                 <div>

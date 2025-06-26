@@ -61,22 +61,27 @@ export function CriarVeiculoDialog({ onCreated }: { onCreated?: () => void }) {
       <DialogTrigger asChild>
         <Button>Criar Veículo</Button>
       </DialogTrigger>
-      <DialogContent className="bg-white">
+      <DialogContent className="bg-white dark:bg-zinc-900  text-black dark:text-white">
         <DialogHeader>
           <DialogTitle>Novo Veículo</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 ">
           <div>
             <Label>Placa</Label>
             <Input
               value={placa}
               onChange={(e) => setPlaca(e.target.value)}
               required
+              className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground"
             />
           </div>
           <div>
             <Label>Modelo</Label>
-            <Input value={modelo} onChange={(e) => setModelo(e.target.value)} />
+            <Input
+              value={modelo}
+              onChange={(e) => setModelo(e.target.value)}
+              className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground"
+            />
           </div>
           <div>
             <Label>Ano</Label>
@@ -85,6 +90,7 @@ export function CriarVeiculoDialog({ onCreated }: { onCreated?: () => void }) {
               onChange={(e) => setAno(e.target.value)}
               type="number"
               placeholder="2024"
+              className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground"
             />
           </div>
           <div>
@@ -93,7 +99,7 @@ export function CriarVeiculoDialog({ onCreated }: { onCreated?: () => void }) {
               value={combustivel}
               onValueChange={(v) => setCombustivel(v as TipoCombustivel)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-white dark:bg-zinc-800 border border-border dark:border-zinc-700 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground">
                 <SelectValue placeholder="Tipo de combustível" />
               </SelectTrigger>
               <SelectContent>
