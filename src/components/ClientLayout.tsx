@@ -3,7 +3,7 @@
 import { Session } from "next-auth";
 import { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
-import Header from "./Header";
+import Header from "./header";
 import MobileNav from "./MobileNav";
 
 interface ClientLayoutProps {
