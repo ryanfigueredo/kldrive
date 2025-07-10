@@ -22,15 +22,37 @@ export async function GET(req: NextRequest) {
   if (usuario) filtros.userId = usuario;
   if (veiculo) filtros.vehicleId = veiculo;
 
+  // Mês atual
   const [km, fuel] = await Promise.all([
-    prisma.kmRecord.findMany({
-      where: filtros,
-      include: { user: true },
-    }),
-    prisma.fuelRecord.findMany({
-      where: filtros,
-      include: { user: true },
-    }),
+    prisma.kmRecord.findMany({ where: filtros, include: { user: true } }),
+    prisma.fuelRecord.findMany({ where: filtros, include: { user: true } }),
+  ]);
+
+  // Mês anterior
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (!startDate && !endDate) {
+    filtros.createdAt = { gte: startOfCurrentMonth };
+  }
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    0,
+    23,
+    59,
+    59
+  );
+
+  const filtrosMesAnterior: typeof filtros = {
+    createdAt: { gte: startOfLastMonth, lte: endOfLastMonth },
+  };
+  if (usuario) filtrosMesAnterior.userId = usuario;
+  if (veiculo) filtrosMesAnterior.vehicleId = veiculo;
+
+  const [kmAnterior, fuelAnterior] = await Promise.all([
+    prisma.kmRecord.findMany({ where: filtrosMesAnterior }),
+    prisma.fuelRecord.findMany({ where: filtrosMesAnterior }),
   ]);
 
   const totalKm = km.reduce((acc, r) => acc + r.km, 0);
@@ -70,6 +92,21 @@ export async function GET(req: NextRequest) {
       (abastecimentoPorDataPorUsuario[dia][usuario] ?? 0) + r.valor;
   });
 
+  const historicoComparativo = {
+    kmAnterior: kmAnterior?.reduce((acc, r) => acc + r.km, 0) ?? 0,
+    valorAbastecidoAnterior:
+      fuelAnterior?.reduce((acc, r) => acc + r.valor, 0) ?? 0,
+    qtdKmAnterior: kmAnterior?.length ?? 0,
+    qtdAbastecimentoAnterior: fuelAnterior?.length ?? 0,
+  };
+
+  console.log("🔎 DEBUG metrics:", {
+    totalKm,
+    totalValorAbastecido,
+    totalPorTipo,
+    historicoComparativo,
+  });
+
   return NextResponse.json({
     totalKm,
     totalValorAbastecido,
@@ -77,5 +114,12 @@ export async function GET(req: NextRequest) {
     kmPorData,
     abastecimentoPorVeiculo,
     abastecimentoPorDataPorUsuario,
+    historicoComparativo: {
+      kmAnterior: kmAnterior?.reduce((acc, r) => acc + r.km, 0) ?? 0,
+      valorAbastecidoAnterior:
+        fuelAnterior?.reduce((acc, r) => acc + r.valor, 0) ?? 0,
+      qtdKmAnterior: kmAnterior?.length ?? 0,
+      qtdAbastecimentoAnterior: fuelAnterior?.length ?? 0,
+    },
   });
 }

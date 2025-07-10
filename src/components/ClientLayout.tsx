@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import Header from "./header";
 import MobileNav from "./MobileNav";
+import { useMounted } from "@/hooks/useMounted";
 
 interface ClientLayoutProps {
   session: Session | null;
@@ -13,13 +14,16 @@ interface ClientLayoutProps {
 
 export default function ClientLayout({ session, children }: ClientLayoutProps) {
   const isLoggedIn = !!session;
+  const mounted = useMounted();
+
+  if (!mounted) return null;
 
   return (
     <>
       {isLoggedIn && (
         <>
           <div className="hidden md:flex fixed top-0 left-0 bottom-0 w-64">
-            <Sidebar session={session} /> {/* ✅ Sessão passada direto */}
+            <Sidebar session={session} />
           </div>
 
           <div className="fixed top-0 left-0 right-0 h-16 z-50">

@@ -1,5 +1,3 @@
-// src/components/ui/charts.tsx
-
 "use client";
 
 import { Tooltip as RechartsTooltip, TooltipProps } from "recharts";

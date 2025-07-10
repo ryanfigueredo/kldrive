@@ -23,10 +23,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Nome único para o arquivo no bucket, pode mudar conforme sua estrutura
   const fileName = `profile-photos/${token.sub}-${Date.now()}-${file.name}`;
-
-  // Transformar ArrayBuffer em Uint8Array para compatibilidade
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
 

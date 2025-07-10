@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Home, Fuel, BarChart2 } from "lucide-react";
 import { Session } from "next-auth";
-import { signOut } from "next-auth/react";
 import { useState } from "react";
 
 interface SidebarProps {
@@ -12,7 +11,7 @@ interface SidebarProps {
 
 export function Sidebar({ session }: SidebarProps) {
   const isAdmin = session.user.role === "ADMIN";
-  const [open, setOpen] = useState(false);
+  const [, setOpen] = useState(false);
 
   return (
     <aside className="fixed top-0 left-0 h-full w-16 bg-[#242424] text-white flex flex-col justify-between py-4 items-center shadow-lg z-50">

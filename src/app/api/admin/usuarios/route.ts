@@ -17,7 +17,7 @@ export async function GET() {
       id: true,
       name: true,
       email: true,
-      vehicleId: true, // agora está OK pois você gerou o client novamente
+      vehicleId: true,
     },
   });
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         email,
         role,
         password: hashedPassword,
-        vehicleId: vehicleId || undefined, // usar vehicleId direto!
+        vehicleId: vehicleId || undefined,
       },
     });
 

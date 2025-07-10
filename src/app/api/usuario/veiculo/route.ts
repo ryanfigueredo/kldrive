@@ -11,12 +11,12 @@ export async function GET(req: NextRequest) {
   const user = await prisma.user.findUnique({
     where: { id: token.sub ?? "" },
     include: {
-      vehicle: true, // ✅ relacionamento 1:1
+      vehicle: true,
     },
   });
 
   if (!user || !user.vehicle) {
-    return NextResponse.json(null); // sem veículo vinculado
+    return NextResponse.json(null);
   }
 
   return NextResponse.json(user.vehicle);

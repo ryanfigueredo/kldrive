@@ -19,11 +19,11 @@ export default async function RootLayout({
   const session: Session | null = await getServerSession(authOptions);
 
   return (
-    <html lang="en">
+    <html lang="pt-br" suppressHydrationWarning>
       <body className={`${figtree.className} antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem={false}
         >
           <ClientLayout session={session}>{children}</ClientLayout>

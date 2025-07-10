@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
 
   const buffer = Buffer.from(await fotoFile.arrayBuffer());
 
-  // Passa buffer e nome original para a função de upload
   const fotoUrl = await uploadToS3Buffer(buffer, fotoFile.name);
 
   await prisma.fuelRecord.create({

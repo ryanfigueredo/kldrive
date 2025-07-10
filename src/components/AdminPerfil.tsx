@@ -3,26 +3,16 @@
 import { useEffect, useState } from "react";
 import { Session } from "next-auth";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RegistroItem } from "@/components/RegistroItem";
 import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
 import { VincularUsuarioDialog } from "@/components/VincularUsuarioDialog";
-import {
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  AreaChart,
-  Area,
-  ComposedChart,
-  Bar,
-  Legend,
-} from "recharts";
-
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/charts";
 import { Car, Fuel, Gauge, Users } from "lucide-react";
+import { ListaUsuariosCadastrados } from "./ListaUsuariosCadastrados";
+import { ListaVeiculosCadastrados } from "./ListaVeiculosCadastrados";
+import DashboardGraficos from "./AdminGraficos";
+import { EstatisticaCard } from "./EstatisticaCard";
 
 interface Registro {
   id: string;
@@ -43,6 +33,12 @@ interface GraficoData {
     ABASTECIMENTO?: number;
   };
   kmPorData?: Record<string, number>;
+  historicoComparativo?: {
+    kmAnterior: number;
+    valorAbastecidoAnterior: number;
+    qtdKmAnterior: number;
+    qtdAbastecimentoAnterior: number;
+  };
 }
 
 export default function AdminPerfil({ session }: { session: Session }) {
@@ -50,8 +46,8 @@ export default function AdminPerfil({ session }: { session: Session }) {
   const [graficoData, setGraficoData] = useState<GraficoData>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modalImgSrc, setModalImgSrc] = useState<string | null>(null);
-  const [modalImgAlt, setModalImgAlt] = useState<string>("");
+  const [, setModalImgSrc] = useState<string | null>(null);
+  const [, setModalImgAlt] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
@@ -78,6 +74,8 @@ export default function AdminPerfil({ session }: { session: Session }) {
         const registrosData: Registro[] = await registrosRes.json();
         const dashboardData: GraficoData = await dashboardRes.json();
 
+        console.log("DADOS DO DASHBOARD", dashboardData);
+
         setRegistros(registrosData ?? []);
         setGraficoData(dashboardData ?? {});
       } catch {
@@ -90,36 +88,14 @@ export default function AdminPerfil({ session }: { session: Session }) {
     fetchData();
   }, []);
 
-  const dadosGraficoArea = graficoData.kmPorData
-    ? Object.entries(graficoData.kmPorData).map(([data, km]) => ({
-        data,
-        km,
-      }))
-    : [];
-
-  type CompostoData = {
-    [data: string]: {
-      data: string;
-      [usuario: string]: number | string;
-    };
-  };
-
-  const dadosBarChart: CompostoData = registros
-    .filter((r) => r.tipo === "ABASTECIMENTO")
-    .reduce((acc, r) => {
-      const dia = r.data.split("T")[0];
-      if (!acc[dia]) acc[dia] = { data: dia };
-      acc[dia][r.usuario] = ((acc[dia][r.usuario] ?? 0) as number) + r.valor;
-      return acc;
-    }, {} as CompostoData);
-
-  const dadosGraficoComposto = Object.values(dadosBarChart);
-
   return (
     <main className="min-h-screen px-4 py-6">
       <h1 className="text-2xl font-bold tracking-tight mb-6">
         Painel Administrativo
       </h1>
+
+      {loading && <p>Carregando dados...</p>}
+      {error && <p className="text-red-600">{error}</p>}
 
       <div className="flex gap-4 mb-6">
         <CriarUsuarioDialog onUserCreated={() => window.location.reload()} />
@@ -127,158 +103,74 @@ export default function AdminPerfil({ session }: { session: Session }) {
         <VincularUsuarioDialog onVincular={() => window.location.reload()} />
       </div>
 
-      {loading && <p>Carregando dados...</p>}
-      {error && <p className="text-red-600">{error}</p>}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-black border border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-primary">
-              Total KM Rodado
-            </CardTitle>
-            <Gauge className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {graficoData.totalKm?.toLocaleString() ?? "0"} km
-            </div>
-            <p className="text-xs text-muted-foreground">
-              ↑ 3.1% desde o mês anterior
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-black border border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Valor Total Abastecido
-            </CardTitle>
-            <Fuel className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {graficoData.totalValorAbastecido?.toFixed(2) ?? "0.00"}
-            </div>
-            <p className="text-xs text-muted-foreground">↑ 1.7% este mês</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-black border border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Registros de KM
-            </CardTitle>
-            <Car className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {graficoData.totalPorTipo?.KM ?? 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              ↓ 2% em relação à média
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-black border border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Registros de Abastecimento
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
-            </div>
-            <p className="text-xs text-muted-foreground">+2 esta semana</p>
-          </CardContent>
-        </Card>
+        <EstatisticaCard
+          titulo="Total KM Rodado"
+          valor={`${graficoData.totalKm?.toLocaleString() ?? "0"} km`}
+          valorAtual={graficoData.totalKm ?? 0}
+          valorAnterior={graficoData.historicoComparativo?.kmAnterior ?? 0}
+          icone={<Gauge className="h-4 w-4" />}
+          sufixo="km"
+        />
+        <EstatisticaCard
+          titulo="Valor Total Abastecido"
+          valor={`R$ ${graficoData.totalValorAbastecido?.toFixed(2) ?? "0.00"}`}
+          valorAtual={graficoData.totalValorAbastecido ?? 0}
+          valorAnterior={
+            graficoData.historicoComparativo?.valorAbastecidoAnterior ?? 0
+          }
+          icone={<Fuel className="h-4 w-4" />}
+          sufixo="R$"
+        />
+        <EstatisticaCard
+          titulo="Registros de KM"
+          valor={`${graficoData.totalPorTipo?.KM ?? 0}`}
+          valorAtual={graficoData.totalPorTipo?.KM ?? 0}
+          valorAnterior={graficoData.historicoComparativo?.qtdKmAnterior ?? 0}
+          icone={<Car className="h-4 w-4" />}
+        />
+        <EstatisticaCard
+          titulo="Registros de Abastecimento"
+          valor={`${graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}`}
+          valorAtual={graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
+          valorAnterior={
+            graficoData.historicoComparativo?.qtdAbastecimentoAnterior ?? 0
+          }
+          icone={<Users className="h-4 w-4" />}
+        />
       </div>
 
-      {/* Gráficos seguem abaixo... */}
-
-      {/* Gráfico KM rodado */}
-      {dadosGraficoArea.length > 0 && (
-        <>
-          <h2 className="text-lg font-semibold mb-2">KM rodado por dia</h2>
-          <ChartContainer>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={dadosGraficoArea}>
-                <XAxis dataKey="data" />
-                <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Area
-                  type="monotone"
-                  dataKey="km"
-                  stroke="#B0BC1D"
-                  fill="#B0BC1D"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </>
-      )}
-
-      {/* Gráfico consumo por usuário */}
-      {dadosGraficoComposto.length > 0 && (
-        <>
-          <h2 className="text-lg font-semibold mb-2">
-            Consumo de combustível por usuário
-          </h2>
-          <ChartContainer>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={dadosGraficoComposto} stackOffset="expand">
-                <XAxis dataKey="data" />
-                <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Legend />
-                {registros
-                  .filter((r) => r.tipo === "ABASTECIMENTO")
-                  .map((r) => r.usuario)
-                  .filter((v, i, arr) => arr.indexOf(v) === i)
-                  .map((usuario, idx) => (
-                    <Bar
-                      key={usuario}
-                      dataKey={usuario}
-                      stackId="a"
-                      fill={idx % 2 === 0 ? "#5D9CEC" : "#ED5565"}
-                    />
-                  ))}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </>
-      )}
-
-      <section className="flex flex-col gap-3 mt-6">
-        {registros.length > 0 ? (
-          registros.map((r) => (
-            <RegistroItem
-              key={r.id}
-              r={r}
-              onImageClick={(src) => {
-                setModalImgSrc(src);
-                setModalImgAlt(`${r.tipo} - ${r.placa}`);
-              }}
-            />
-          ))
-        ) : !loading ? (
-          <p className="text-gray-400">Nenhum registro encontrado.</p>
-        ) : null}
-      </section>
-
-      {modalImgSrc && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 cursor-zoom-out"
-          onClick={() => setModalImgSrc(null)}
-        >
-          <Image
-            src={modalImgSrc}
-            alt={modalImgAlt}
-            className="max-w-[90vw] max-h-[90vh] rounded-lg"
-            width={800}
-            height={600}
-          />
+      <div className="flex py-8 gap-8">
+        <div className="items-start grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+          <ListaUsuariosCadastrados />
+          <ListaVeiculosCadastrados />
+          <Card className="dark:bg-card bg-white h-full text-black dark:text-white shadow-xl rounded-xl border-none ">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">
+                Últimos Registros
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {registros.length > 0 ? (
+                registros.map((r) => (
+                  <RegistroItem
+                    key={r.id}
+                    r={r}
+                    onImageClick={(src) => {
+                      setModalImgSrc(src);
+                      setModalImgAlt(`${r.tipo} - ${r.placa}`);
+                    }}
+                  />
+                ))
+              ) : !loading ? (
+                <p className="text-gray-400">Nenhum registro encontrado.</p>
+              ) : null}
+            </CardContent>
+          </Card>
         </div>
-      )}
+      </div>
+
+      <DashboardGraficos registros={registros} graficoData={graficoData} />
     </main>
   );
 }

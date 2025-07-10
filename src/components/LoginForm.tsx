@@ -23,7 +23,7 @@ export function LoginForm() {
     });
 
     if (res?.ok) {
-      window.location.href = "/"; // ✅ força reload completo com sessão SSR nova
+      window.location.href = "/";
     } else {
       alert("E-mail ou senha inválidos.");
     }
