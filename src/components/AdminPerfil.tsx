@@ -97,7 +97,7 @@ export default function AdminPerfil({ session }: { session: Session }) {
       {loading && <p>Carregando dados...</p>}
       {error && <p className="text-red-600">{error}</p>}
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
         <CriarUsuarioDialog onUserCreated={() => window.location.reload()} />
         <CriarVeiculoDialog onCreated={() => window.location.reload()} />
         <VincularUsuarioDialog onVincular={() => window.location.reload()} />
