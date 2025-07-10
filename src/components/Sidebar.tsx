@@ -51,23 +51,6 @@ export function Sidebar({ session }: SidebarProps) {
             </div>
           )}
         </button>
-
-        {open && (
-          <div className="absolute bottom-14 left-0 bg-white text-black rounded shadow-md text-sm w-48 p-2 z-50">
-            <Link
-              href="/perfil"
-              className="block w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
-            >
-              Ver veículo
-            </Link>
-            <button
-              onClick={() => signOut()}
-              className="block w-full text-left px-3 py-2 text-red-600 hover:bg-gray-100 rounded"
-            >
-              Sair
-            </button>
-          </div>
-        )}
       </div>
     </aside>
   );
