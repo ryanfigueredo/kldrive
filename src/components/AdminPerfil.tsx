@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Session } from "next-auth";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RegistroItem } from "@/components/RegistroItem";
@@ -41,7 +40,27 @@ interface GraficoData {
   };
 }
 
-export default function AdminPerfil({ session }: { session: Session }) {
+interface RotaRecord {
+  id: string;
+  kmSaida: number;
+  photoUrl: string;
+  partida: string;
+  destino: string;
+  alterouRota: boolean;
+  alteracaoRota?: string | null;
+  realizouAbastecimento: boolean;
+  createdAt: string;
+  user?: { name?: string };
+  vehicle?: { placa?: string };
+}
+
+export default function AdminPerfil({
+  session,
+  rotas = [],
+}: {
+  session: any;
+  rotas: RotaRecord[];
+}) {
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [graficoData, setGraficoData] = useState<GraficoData>({});
   const [loading, setLoading] = useState(false);
@@ -74,8 +93,6 @@ export default function AdminPerfil({ session }: { session: Session }) {
         const registrosData: Registro[] = await registrosRes.json();
         const dashboardData: GraficoData = await dashboardRes.json();
 
-        console.log("DADOS DO DASHBOARD", dashboardData);
-
         setRegistros(registrosData ?? []);
         setGraficoData(dashboardData ?? {});
       } catch {
@@ -102,6 +119,53 @@ export default function AdminPerfil({ session }: { session: Session }) {
         <CriarVeiculoDialog onCreated={() => window.location.reload()} />
         <VincularUsuarioDialog onVincular={() => window.location.reload()} />
       </div>
+
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold mb-2">Rotas Registradas</h2>
+        <div className="flex flex-col gap-3">
+          {rotas.length > 0 ? (
+            rotas.map((rota) => (
+              <div
+                key={rota.id}
+                className="bg-white p-3 rounded-xl shadow-md flex gap-4 items-center"
+              >
+                <img
+                  src={rota.photoUrl}
+                  alt="Foto KM"
+                  className="w-20 h-20 object-cover rounded-lg"
+                />
+                <div className="text-sm text-gray-800">
+                  <p>
+                    <strong>{rota.kmSaida} km</strong> | {rota.partida} →{" "}
+                    {rota.destino}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(rota.createdAt).toLocaleString()}
+                  </p>
+                  <p className="text-xs">
+                    Veículo: {rota.vehicle?.placa ?? "-"} | Colaborador:{" "}
+                    {rota.user?.name ?? "-"}
+                  </p>
+                  {rota.alterouRota && (
+                    <p className="text-xs text-yellow-700">
+                      Alteração: {rota.alteracaoRota}
+                    </p>
+                  )}
+                  {rota.realizouAbastecimento && (
+                    <p className="text-xs text-green-700">
+                      Realizou abastecimento nesta rota
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-500">
+              Nenhuma rota registrada ainda.
+            </p>
+          )}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <EstatisticaCard

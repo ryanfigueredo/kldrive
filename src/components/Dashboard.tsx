@@ -70,7 +70,7 @@ export function Dashboard({ session }: { session: Session }) {
 
   return (
     <main className="min-h-screen px-4 py-6">
-      <h1 className="text-xl font-bold mb-1">Bem-vindo à KL Drive</h1>
+      <h1 className="text-xl font-bold mb-1">Bem-vindo à KL Rotas</h1>
 
       {vehicleInfo ? (
         <p className="text-sm text-gray-400 mb-4">
@@ -81,9 +81,15 @@ export function Dashboard({ session }: { session: Session }) {
         <p className="text-sm text-red-500 mb-4">Nenhum veículo selecionado.</p>
       )}
 
-      <Button className="mb-6" onClick={irParaNovoAbastecimento}>
-        Registrar Quilometragem
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <Button className="mb-6" onClick={irParaNovoAbastecimento}>
+          Registrar Quilometragem
+        </Button>
+
+        <Button className="mb-6" onClick={() => router.push("/rota/nova")}>
+          Registrar Rota
+        </Button>
+      </div>
 
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-2">Últimas Quilometragens</h2>

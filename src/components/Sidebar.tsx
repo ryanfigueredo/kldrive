@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Fuel, BarChart2 } from "lucide-react";
+import { Home, Fuel, BarChart2, Route } from "lucide-react";
 import { Session } from "next-auth";
 import { useState } from "react";
 
@@ -26,6 +26,13 @@ export function Sidebar({ session }: SidebarProps) {
           icon={<Fuel size={24} />}
           label="Abastecer"
         />
+
+        <SidebarNavLink
+          href="/rota/nova"
+          icon={<Route size={24} />}
+          label="Nova Rota"
+        />
+
         {isAdmin && (
           <SidebarNavLink
             href="/admin"

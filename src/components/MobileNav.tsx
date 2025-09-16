@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Fuel, BarChart2 } from "lucide-react";
+import { Home, Fuel, BarChart2, Route } from "lucide-react";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
@@ -28,6 +28,10 @@ export default function MobileNav({ session }: MobileNavProps) {
         className="flex flex-col items-center gap-1"
       >
         <Fuel className="w-5 h-5" />
+      </Link>
+
+      <Link href="/rota/nova" className="flex flex-col items-center gap-1">
+        <Route className="w-5 h-5" />
       </Link>
 
       {isAdmin && (

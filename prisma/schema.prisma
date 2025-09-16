@@ -18,6 +18,7 @@ model User {
   vehicleId String?
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
   kmRecords   KmRecord[]
+  rotaRecords RotaRecord[]
   fuelRecords FuelRecord[]
 }
 
@@ -30,6 +31,7 @@ model Vehicle {
   users User[] 
   kmRecords   KmRecord[]
   fuelRecords FuelRecord[]
+  rotaRecords RotaRecord[]
 
   createdAt DateTime @default(now())
 }
@@ -80,4 +82,20 @@ enum SituacaoTanque {
   CHEIO
   MEIO_TANQUE
   QUASE_VAZIO
+}
+
+model RotaRecord {
+  id                String   @id @default(uuid())
+  vehicle           Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId         String
+  user              User     @relation(fields: [userId], references: [id])
+  userId            String
+  kmSaida           Float
+  photoUrl          String
+  partida           String
+  destino           String
+  alterouRota       Boolean  @default(false)
+  alteracaoRota     String?
+  realizouAbastecimento Boolean @default(false)
+  createdAt         DateTime @default(now())
 }
