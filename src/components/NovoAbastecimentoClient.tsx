@@ -111,7 +111,7 @@ export default function NovoAbastecimentoClient({
   }
 
   return (
-    <main className="min-h-screen px-4 py-6">
+    <main className="min-h-screen px-4 py-6 pb-24">
       <h1 className="text-xl font-bold mb-6">Registrar Abastecimento</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
