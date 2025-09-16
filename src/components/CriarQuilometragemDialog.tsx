@@ -88,7 +88,7 @@ export default function CriarQuilometragemDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Registrar Quilometragem</DialogTitle>
+          <DialogTitle>Registrar Abastecimento</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

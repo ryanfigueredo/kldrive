@@ -83,7 +83,7 @@ export function Dashboard({ session }: { session: Session }) {
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <Button className="mb-6" onClick={irParaNovoAbastecimento}>
-          Registrar Quilometragem
+          Registrar Abastecimento
         </Button>
 
         <Button className="mb-6" onClick={() => router.push("/rota/nova")}>
