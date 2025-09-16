@@ -226,7 +226,7 @@ export default function NovoRotaClient({ session }: { session: Session }) {
           </div>
           {realizouAbastecimento && (
             <div className="text-yellow-700 text-sm mt-2">
-              ⛽ Não esqueça de registrar também a Quilometragem.
+              ⛽ Não esqueça de registrar também o Abastecimento.
             </div>
           )}
         </div>
