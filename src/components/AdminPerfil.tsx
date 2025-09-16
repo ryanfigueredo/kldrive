@@ -12,6 +12,7 @@ import { ListaUsuariosCadastrados } from "./ListaUsuariosCadastrados";
 import { ListaVeiculosCadastrados } from "./ListaVeiculosCadastrados";
 import DashboardGraficos from "./AdminGraficos";
 import { EstatisticaCard } from "./EstatisticaCard";
+import { Session } from "next-auth";
 
 interface Registro {
   id: string;
@@ -58,7 +59,7 @@ export default function AdminPerfil({
   session,
   rotas = [],
 }: {
-  session: any;
+  session: Session;
   rotas: RotaRecord[];
 }) {
   const [registros, setRegistros] = useState<Registro[]>([]);
