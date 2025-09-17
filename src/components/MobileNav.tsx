@@ -6,6 +6,7 @@ import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface MobileNavProps {
   session: Session;
@@ -18,7 +19,7 @@ export default function MobileNav({ session }: MobileNavProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md bg-[#242424] text-white py-3 px-6 rounded-full shadow-lg flex justify-between items-center ">
+    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-100 w-[90%] max-w-md bg-[#242424] text-white py-3 px-6 rounded-full shadow-lg flex justify-between items-center ">
       <Link href="/dashboard" className="flex flex-col items-center gap-1">
         <Home className="w-5 h-5" />
       </Link>
@@ -44,7 +45,7 @@ export default function MobileNav({ session }: MobileNavProps) {
       <div className="relative">
         <button onClick={() => setOpen((prev) => !prev)}>
           {avatarUrl ? (
-            <img
+            <Image
               src={avatarUrl}
               alt="avatar"
               className="w-8 h-8 rounded-full object-cover border-2 border-white"

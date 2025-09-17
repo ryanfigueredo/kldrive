@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Home, Fuel, BarChart2, Route } from "lucide-react";
 import { Session } from "next-auth";
 import { useState } from "react";
+import Image from "next/image";
 
 interface SidebarProps {
   session: Session;
@@ -46,7 +47,7 @@ export function Sidebar({ session }: SidebarProps) {
       <div className="relative mb-4">
         <button onClick={() => setOpen((prev) => !prev)}>
           {session.user.image ? (
-            <img
+            <Image
               src={session.user.image}
               alt="avatar"
               className="w-10 h-10 rounded-full object-cover border-2 border-white"

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type Session } from "next-auth";
+import ImageUpload from "./ImageUpload";
 
 export default function NovoRotaClient({ session }: { session: Session }) {
   const router = useRouter();
@@ -15,7 +15,6 @@ export default function NovoRotaClient({ session }: { session: Session }) {
 
   const [kmSaida, setKmSaida] = useState("");
   const [fotoKm, setFotoKm] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [partida, setPartida] = useState("");
   const [destino, setDestino] = useState("");
   const [alterouRota, setAlterouRota] = useState(false);
@@ -104,29 +103,15 @@ export default function NovoRotaClient({ session }: { session: Session }) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <label className="font-semibold">Foto do KM Atual *</label>
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setFotoKm(file);
-                setPreview(URL.createObjectURL(file));
-              }
+          <ImageUpload
+            onChange={(file: File) => {
+              setFotoKm(file);
             }}
-            className={`border rounded-lg p-3 w-full ${
-              errors.fotoKm ? "border-red-500" : ""
-            }`}
           />
-          {preview && (
-            <Image
-              src={preview}
-              alt="Preview"
-              className="rounded-lg max-w-xs mt-2"
-              width={320}
-              height={240}
-            />
+          {errors.fotoKm && (
+            <span className="text-xs text-red-500">
+              A foto do odômetro é obrigatória.
+            </span>
           )}
         </div>
 
@@ -226,7 +211,7 @@ export default function NovoRotaClient({ session }: { session: Session }) {
           </div>
           {realizouAbastecimento && (
             <div className="text-yellow-700 text-sm mt-2">
-              ⛽ Não esqueça de registrar também o Abastecimento.
+              Não esqueça de registrar também o Abastecimento.
             </div>
           )}
         </div>

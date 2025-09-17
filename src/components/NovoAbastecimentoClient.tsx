@@ -1,17 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Session } from "next-auth";
 import CurrencyInput from "react-currency-input-field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import ImageUpload from "./ImageUpload";
 
 interface Vehicle {
   id: string;
@@ -29,11 +22,9 @@ export default function NovoAbastecimentoClient({
   const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
   const [litros, setLitros] = useState("");
   const [valor, setValor] = useState("");
-  const [situacao, setSituacao] = useState("CHEIO");
   const [kmAtual, setKmAtual] = useState("");
   const [observacao, setObservacao] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const [errors, setErrors] = useState({
@@ -84,7 +75,6 @@ export default function NovoAbastecimentoClient({
       const formData = new FormData();
       formData.append("litros", litros);
       formData.append("valor", valor);
-      formData.append("situacao", situacao);
       formData.append("kmAtual", kmAtual);
       formData.append("observacao", observacao);
       formData.append("foto", foto as File);
@@ -116,28 +106,15 @@ export default function NovoAbastecimentoClient({
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <label className="font-semibold">Foto do Odômetro *</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setFoto(file);
-                setPreview(URL.createObjectURL(file));
-              }
+          <ImageUpload
+            onChange={(file: File) => {
+              setFoto(file);
             }}
-            className={`border rounded-lg p-3 w-full ${
-              errors.foto ? "border-red-500" : ""
-            }`}
           />
-          {preview && (
-            <Image
-              src={preview}
-              alt="Preview"
-              className="rounded-lg max-w-xs mt-2"
-              width={320}
-              height={240}
-            />
+          {errors.foto && (
+            <span className="text-xs text-red-500">
+              A foto do odômetro é obrigatória.
+            </span>
           )}
         </div>
 
@@ -162,17 +139,6 @@ export default function NovoAbastecimentoClient({
           }`}
         />
 
-        <Select value={situacao} onValueChange={setSituacao}>
-          <SelectTrigger>
-            <SelectValue placeholder="Situação do tanque" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="CHEIO">Tanque cheio</SelectItem>
-            <SelectItem value="MEIO_TANQUE">Meio tanque</SelectItem>
-            <SelectItem value="QUASE_VAZIO">Quase vazio</SelectItem>
-          </SelectContent>
-        </Select>
-
         <input
           type="number"
           placeholder="Quilometragem atual (ex.: 123456)*"
@@ -184,7 +150,7 @@ export default function NovoAbastecimentoClient({
         />
 
         <textarea
-          placeholder="Observações (opcional)"
+          placeholder="Observações"
           value={observacao}
           onChange={(e) => setObservacao(e.target.value)}
           className="border rounded-lg p-3 w-full"
@@ -194,7 +160,7 @@ export default function NovoAbastecimentoClient({
           <button
             type="submit"
             disabled={loading}
-            className="bg-primary py-3 px-4 rounded-xl hover:bg-black/40 transition disabled:opacity-50 flex-1"
+            className="bg-primary py-3 px-4 rounded-xl hover:bg-black/40 transition disabled:opacity-50 flex-1 font-bold"
           >
             {loading ? "Enviando..." : "Registrar"}
           </button>

@@ -1,4 +1,3 @@
-// src/components/ImageUpload.tsx
 "use client";
 
 import Image from "next/image";
@@ -26,6 +25,7 @@ export default function ImageUpload({ onChange }: ImageUploadProps) {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        capture="environment" // Força usar câmera traseira
         onChange={handleFileChange}
         hidden
       />
@@ -43,7 +43,7 @@ export default function ImageUpload({ onChange }: ImageUploadProps) {
             height={240}
           />
         ) : (
-          "Selecionar Foto do Odômetro"
+          "Tirar Foto do Odômetro"
         )}
       </button>
     </div>

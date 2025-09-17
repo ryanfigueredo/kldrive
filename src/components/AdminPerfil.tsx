@@ -1,18 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RegistroItem } from "@/components/RegistroItem";
 import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
 import { VincularUsuarioDialog } from "@/components/VincularUsuarioDialog";
-import { Car, Fuel, Gauge, Users } from "lucide-react";
+import { Car, Fuel, Gauge, Users, Eye } from "lucide-react";
 import { ListaUsuariosCadastrados } from "./ListaUsuariosCadastrados";
 import { ListaVeiculosCadastrados } from "./ListaVeiculosCadastrados";
 import DashboardGraficos from "./AdminGraficos";
 import { EstatisticaCard } from "./EstatisticaCard";
+import { ImageModal } from "./ImageModal";
+import { FiltroRotas } from "./FiltroRotas";
 import { Session } from "next-auth";
+import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface Registro {
   id: string;
@@ -66,9 +71,43 @@ export default function AdminPerfil({
   const [graficoData, setGraficoData] = useState<GraficoData>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [, setModalImgSrc] = useState<string | null>(null);
-  const [, setModalImgAlt] = useState<string>("");
+  const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
+  const [modalImageTitle, setModalImageTitle] = useState<string>("");
+  const [modalImageSubtitle, setModalImageSubtitle] = useState<string>("");
+  const [filtroDataInicio, setFiltroDataInicio] = useState<Date>();
+  const [filtroDataFim, setFiltroDataFim] = useState<Date>();
   const router = useRouter();
+
+  const rotasFiltradas = useMemo(() => {
+    if (!filtroDataInicio && !filtroDataFim) return rotas;
+
+    return rotas.filter((rota) => {
+      const dataRota = new Date(rota.createdAt);
+
+      if (filtroDataInicio && dataRota < filtroDataInicio) return false;
+      if (filtroDataFim && dataRota > filtroDataFim) return false;
+
+      return true;
+    });
+  }, [rotas, filtroDataInicio, filtroDataFim]);
+
+  const handleFiltroChange = (dataInicio?: Date, dataFim?: Date) => {
+    setFiltroDataInicio(dataInicio);
+    setFiltroDataFim(dataFim);
+  };
+
+  const abrirModalImagem = (
+    imageUrl: string,
+    kmSaida: number,
+    partida: string,
+    destino: string,
+    placa: string,
+    usuario: string
+  ) => {
+    setModalImageUrl(imageUrl);
+    setModalImageTitle(`Odômetro: ${kmSaida} km`);
+    setModalImageSubtitle(`${partida} → ${destino} | ${placa} | ${usuario}`);
+  };
 
   useEffect(() => {
     if (!session) return;
@@ -122,52 +161,132 @@ export default function AdminPerfil({
       </div>
 
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-2">Rotas Registradas</h2>
-        <div className="flex flex-col gap-3">
-          {rotas.length > 0 ? (
-            rotas.map((rota) => (
-              <div
-                key={rota.id}
-                className="bg-white p-3 rounded-xl shadow-md flex gap-4 items-center"
-              >
-                <img
-                  src={rota.photoUrl}
-                  alt="Foto KM"
-                  className="w-20 h-20 object-cover rounded-lg"
-                />
-                <div className="text-sm text-gray-800">
-                  <p>
-                    <strong>{rota.kmSaida} km</strong> | {rota.partida} →{" "}
-                    {rota.destino}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(rota.createdAt).toLocaleString()}
-                  </p>
-                  <p className="text-xs">
-                    Veículo: {rota.vehicle?.placa ?? "-"} | Colaborador:{" "}
-                    {rota.user?.name ?? "-"}
-                  </p>
-                  {rota.alterouRota && (
-                    <p className="text-xs text-yellow-700">
-                      Alteração: {rota.alteracaoRota}
-                    </p>
-                  )}
-                  {rota.realizouAbastecimento && (
-                    <p className="text-xs text-green-700">
-                      Realizou abastecimento nesta rota
-                    </p>
-                  )}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Rotas Registradas</h2>
+          <Badge variant="secondary">
+            {rotasFiltradas.length} registro
+            {rotasFiltradas.length !== 1 ? "s" : ""}
+          </Badge>
+        </div>
+
+        <FiltroRotas onFiltroChange={handleFiltroChange} />
+
+        <div className="flex flex-col gap-3  ">
+          {rotasFiltradas.length > 0 ? (
+            rotasFiltradas.map((rota) => (
+              <Card key={rota.id} className="p-4 bg-gray-50 text-black">
+                <div className="flex gap-4 items-start ">
+                  <div className="relative">
+                    <Image
+                      src={rota.photoUrl}
+                      alt="Foto KM"
+                      width={80}
+                      height={80}
+                      className="w-20  h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() =>
+                        abrirModalImagem(
+                          rota.photoUrl,
+                          rota.kmSaida,
+                          rota.partida,
+                          rota.destino,
+                          rota.vehicle?.placa ?? "-",
+                          rota.user?.name ?? "-"
+                        )
+                      }
+                    />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                      onClick={() =>
+                        abrirModalImagem(
+                          rota.photoUrl,
+                          rota.kmSaida,
+                          rota.partida,
+                          rota.destino,
+                          rota.vehicle?.placa ?? "-",
+                          rota.user?.name ?? "-"
+                        )
+                      }
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-semibold text-lg">
+                          {rota.kmSaida.toLocaleString()} km
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          <strong>{rota.partida}</strong> →{" "}
+                          <strong>{rota.destino}</strong>
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {rota.alterouRota && (
+                          <Badge variant="destructive">Rota Alterada</Badge>
+                        )}
+                        {rota.realizouAbastecimento && (
+                          <Badge variant="default">Com Abastecimento</Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-500">
+                      <p>
+                        <strong>Data:</strong>{" "}
+                        {new Date(rota.createdAt).toLocaleString("pt-BR")}
+                      </p>
+                      <p>
+                        <strong>Veículo:</strong> {rota.vehicle?.placa ?? "-"}
+                      </p>
+                      <p>
+                        <strong>Colaborador:</strong> {rota.user?.name ?? "-"}
+                      </p>
+                    </div>
+
+                    {rota.alterouRota && rota.alteracaoRota && (
+                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                        <p className="text-xs text-yellow-800">
+                          <strong>Alteração:</strong> {rota.alteracaoRota}
+                        </p>
+                      </div>
+                    )}
+
+                    {rota.realizouAbastecimento && (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                        <p className="text-xs text-green-800">
+                          ⛽ Realizou abastecimento nesta rota - verificar
+                          registro de combustível
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </Card>
             ))
           ) : (
-            <p className="text-sm text-gray-500">
-              Nenhuma rota registrada ainda.
+            <p className="text-sm text-gray-500 text-center py-8">
+              {rotas.length === 0
+                ? "Nenhuma rota registrada ainda."
+                : "Nenhuma rota encontrada para o período selecionado."}
             </p>
           )}
         </div>
       </section>
 
+      {/* Modal para visualizar imagens */}
+      <ImageModal
+        isOpen={!!modalImageUrl}
+        onClose={() => setModalImageUrl(null)}
+        imageUrl={modalImageUrl || ""}
+        title={modalImageTitle}
+        subtitle={modalImageSubtitle}
+      />
+
+      {/* Resto do componente permanece igual... */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <EstatisticaCard
           titulo="Total KM Rodado"
@@ -209,7 +328,7 @@ export default function AdminPerfil({
         <div className="items-start grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           <ListaUsuariosCadastrados />
           <ListaVeiculosCadastrados />
-          <Card className="dark:bg-card bg-white h-full text-black dark:text-white shadow-xl rounded-xl border-none ">
+          <Card className=" bg-white h-full text-black dark:text-white shadow-xl rounded-xl border-none ">
             <CardHeader>
               <CardTitle className="text-base font-semibold">
                 Últimos Registros
@@ -222,8 +341,8 @@ export default function AdminPerfil({
                     key={r.id}
                     r={r}
                     onImageClick={(src) => {
-                      setModalImgSrc(src);
-                      setModalImgAlt(`${r.tipo} - ${r.placa}`);
+                      setModalImageUrl(src);
+                      setModalImageTitle(`${r.tipo} - ${r.placa}`);
                     }}
                   />
                 ))
