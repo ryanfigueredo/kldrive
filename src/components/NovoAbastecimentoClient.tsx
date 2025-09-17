@@ -149,6 +149,8 @@ export default function NovoAbastecimentoClient({
           }`}
         />
 
+        {/* Situação do tanque removida: sempre CHEIO por padrão no servidor */}
+
         <textarea
           placeholder="Observações"
           value={observacao}

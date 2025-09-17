@@ -9,47 +9,87 @@ export const config = {
   },
 };
 
+// Criação de registro de abastecimento
 export async function POST(req: NextRequest) {
-  const token = await getToken({ req });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
 
-  const formData = await req.formData();
+  try {
+    const formData = await req.formData();
 
-  const kmSaida = parseFloat(formData.get("kmSaida")?.toString() ?? "0");
-  const partida = formData.get("partida")?.toString() ?? "";
-  const destino = formData.get("destino")?.toString() ?? "";
-  const alterouRota = formData.get("alterouRota") === "true";
-  const alteracaoRota = formData.get("alteracaoRota")?.toString() ?? "";
-  const realizouAbastecimento =
-    formData.get("realizouAbastecimento") === "true";
-  const veiculoId = formData.get("veiculoId")?.toString();
-  const fotoFile = formData.get("fotoKm") as File | null;
+    const litrosStr = formData.get("litros")?.toString();
+    const valorStr = formData.get("valor")?.toString();
+    const kmAtualStr = formData.get("kmAtual")?.toString();
+    const situacaoTanqueFromForm = formData.get("situacaoTanque")?.toString();
+    const observacao = formData.get("observacao")?.toString() ?? "";
+    const veiculoId = formData.get("veiculoId")?.toString();
+    const fotoFile = formData.get("foto");
 
-  if (!kmSaida || !partida || !destino || !fotoFile || !veiculoId) {
-    return NextResponse.json(
-      { error: "Campos obrigatórios não preenchidos" },
-      { status: 400 }
+    if (!(fotoFile instanceof Blob)) {
+      return NextResponse.json({ error: "Arquivo inválido" }, { status: 400 });
+    }
+
+    if (!litrosStr || !valorStr || !kmAtualStr || !veiculoId) {
+      return NextResponse.json(
+        { error: "Campos obrigatórios não preenchidos" },
+        { status: 400 }
+      );
+    }
+
+    // Normaliza números (suporta vírgula/pt-BR)
+    const litros = parseFloat(litrosStr.replace(",", "."));
+    const valor = parseFloat(valorStr.replace(",", "."));
+    const kmAtual = parseFloat(kmAtualStr.replace(",", "."));
+
+    if ([litros, valor, kmAtual].some((n) => Number.isNaN(n))) {
+      return NextResponse.json(
+        { error: "Valores numéricos inválidos" },
+        { status: 400 }
+      );
+    }
+
+    const allowedSituacoes = ["CHEIO", "MEIO_TANQUE", "QUASE_VAZIO"] as const;
+    type SituacaoTanqueType = (typeof allowedSituacoes)[number];
+
+    const isSituacaoTanque = (value: string): value is SituacaoTanqueType =>
+      (allowedSituacoes as readonly string[]).includes(value);
+
+    let situacaoTanque: SituacaoTanqueType = "CHEIO";
+    if (situacaoTanqueFromForm && isSituacaoTanque(situacaoTanqueFromForm)) {
+      situacaoTanque = situacaoTanqueFromForm;
+    }
+
+    if (!allowedSituacoes.includes(situacaoTanque)) {
+      return NextResponse.json(
+        { error: "Situação do tanque inválida" },
+        { status: 400 }
+      );
+    }
+
+    const buffer = Buffer.from(await (fotoFile as Blob).arrayBuffer());
+    const fotoUrl = await uploadToS3Buffer(
+      buffer,
+      (fotoFile as { name?: string }).name ?? "abastecimento.jpg"
     );
+
+    const registro = await prisma.fuelRecord.create({
+      data: {
+        litros,
+        valor,
+        kmAtual,
+        situacaoTanque,
+        photoUrl: fotoUrl,
+        observacao,
+        user: { connect: { email: token.email! } },
+        vehicle: { connect: { id: veiculoId } },
+      },
+    });
+
+    return NextResponse.json(registro, { status: 201 });
+  } catch (err) {
+    console.error("Erro ao criar abastecimento:", err);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
-
-  const buffer = Buffer.from(await fotoFile.arrayBuffer());
-  const fotoUrl = await uploadToS3Buffer(buffer, fotoFile.name);
-
-  await prisma.rotaRecord.create({
-    data: {
-      kmSaida,
-      photoUrl: fotoUrl,
-      partida,
-      destino,
-      alterouRota,
-      alteracaoRota: alterouRota ? alteracaoRota : null,
-      realizouAbastecimento,
-      user: { connect: { email: token.email! } },
-      vehicle: { connect: { id: veiculoId } },
-    },
-  });
-
-  return NextResponse.json({ success: true });
 }
