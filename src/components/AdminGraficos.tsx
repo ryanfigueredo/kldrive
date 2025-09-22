@@ -13,6 +13,7 @@ import {
 } from "recharts";
 
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/charts";
+import { ChartRadialSimple } from "@/components/ChartRadialSimple";
 
 interface Registro {
   id: string;
@@ -59,6 +60,7 @@ export default function DashboardGraficos({ registros, graficoData }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
+      <ChartRadialSimple />
       {dadosGraficoArea.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-2">KM rodado por dia</h2>

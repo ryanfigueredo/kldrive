@@ -1,7 +1,7 @@
 "use client";
 
 import React, { memo } from "react";
-import Image from "next/image";
+// Image import removed; this item now renders compact text rows only
 
 interface Registro {
   id: string;
@@ -19,31 +19,12 @@ interface RegistroItemProps {
   onImageClick?: (src: string) => void;
 }
 
-const RegistroItemComponent = ({ r, onImageClick }: RegistroItemProps) => {
+const RegistroItemComponent = ({ r }: RegistroItemProps) => {
   return (
     <div
       className="rounded-xl shadow-md p-4 flex gap-4 items-center"
       key={r.id}
     >
-      <div
-        className="cursor-pointer"
-        onClick={() => r.imagem && onImageClick?.(r.imagem)}
-      >
-        {r.imagem ? (
-          <Image
-            width={80}
-            height={80}
-            src={r.imagem}
-            alt={`${r.tipo} - ${r.placa}`}
-            className="rounded-lg object-cover w-20 h-20 hover:scale-105 transition-transform"
-          />
-        ) : (
-          <div className="w-20 h-20 bg-gray-200 text-gray-400 text-xs flex items-center justify-center rounded-lg">
-            Sem imagem
-          </div>
-        )}
-      </div>
-
       <div className="text-sm">
         <p>
           <strong>{r.tipo}</strong> – {r.placa}

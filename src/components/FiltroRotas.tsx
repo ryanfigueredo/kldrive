@@ -18,13 +18,19 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface FiltroRotasProps {
-  onFiltroChange: (dataInicio?: Date, dataFim?: Date, periodo?: string) => void;
+  onFiltroChange: (filtros: {
+    dataInicio?: Date;
+    dataFim?: Date;
+    periodo?: string;
+    tipo?: "ALL" | "ROTA" | "ABASTECIMENTO";
+  }) => void;
 }
 
 export function FiltroRotas({ onFiltroChange }: FiltroRotasProps) {
   const [dataInicio, setDataInicio] = useState<Date>();
   const [dataFim, setDataFim] = useState<Date>();
   const [periodo, setPeriodo] = useState<string>("");
+  const [tipo, setTipo] = useState<"ALL" | "ROTA" | "ABASTECIMENTO">("ALL");
 
   const handlePeriodoChange = (value: string) => {
     setPeriodo(value);
@@ -55,18 +61,36 @@ export function FiltroRotas({ onFiltroChange }: FiltroRotasProps) {
 
     setDataInicio(inicio);
     setDataFim(fim);
-    onFiltroChange(inicio, fim, value);
+    onFiltroChange({ dataInicio: inicio, dataFim: fim, periodo: value, tipo });
   };
 
   const limparFiltros = () => {
     setDataInicio(undefined);
     setDataFim(undefined);
     setPeriodo("");
-    onFiltroChange();
+    setTipo("ALL");
+    onFiltroChange({});
   };
 
   return (
     <div className="flex flex-wrap gap-2 mb-4 p-4 bg-gray-50 rounded-lg">
+      <Select
+        value={tipo}
+        onValueChange={(v) => {
+          const novo = v as typeof tipo;
+          setTipo(novo);
+          onFiltroChange({ dataInicio, dataFim, periodo, tipo: novo });
+        }}
+      >
+        <SelectTrigger className="w-56 ">
+          <SelectValue placeholder="Tipo de Registro" />
+        </SelectTrigger>
+        <SelectContent className="bg-gray-50 text-black">
+          <SelectItem value="ALL">Todos os tipos</SelectItem>
+          <SelectItem value="ROTA">Apenas Rotas</SelectItem>
+          <SelectItem value="ABASTECIMENTO">Apenas Abastecimentos</SelectItem>
+        </SelectContent>
+      </Select>
       <Select value={periodo} onValueChange={handlePeriodoChange}>
         <SelectTrigger className="w-40 ">
           <SelectValue placeholder="Período" />
@@ -95,7 +119,7 @@ export function FiltroRotas({ onFiltroChange }: FiltroRotasProps) {
             selected={dataInicio}
             onSelect={(date) => {
               setDataInicio(date);
-              onFiltroChange(date, dataFim);
+              onFiltroChange({ dataInicio: date, dataFim, periodo, tipo });
             }}
             locale={ptBR}
           />
@@ -117,7 +141,7 @@ export function FiltroRotas({ onFiltroChange }: FiltroRotasProps) {
             selected={dataFim}
             onSelect={(date) => {
               setDataFim(date);
-              onFiltroChange(dataInicio, date);
+              onFiltroChange({ dataInicio, dataFim: date, periodo, tipo });
             }}
             locale={ptBR}
           />

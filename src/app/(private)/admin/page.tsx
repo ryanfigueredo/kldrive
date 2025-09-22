@@ -15,13 +15,19 @@ export default async function AdminPage() {
     );
   }
 
-  const rotasRaw = await prisma.rotaRecord.findMany({
-    include: {
-      user: true,
-      vehicle: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const [rotasRaw, abastecimentosRaw] = await Promise.all([
+    prisma.rotaRecord.findMany({
+      include: {
+        user: true,
+        vehicle: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.fuelRecord.findMany({
+      include: { user: true, vehicle: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   // Converte createdAt para string
   const rotas = rotasRaw.map((rota) => ({
@@ -29,5 +35,16 @@ export default async function AdminPage() {
     createdAt: rota.createdAt.toISOString(),
   }));
 
-  return <AdminPerfil session={session as Session} rotas={rotas} />;
+  const abastecimentos = abastecimentosRaw.map((a) => ({
+    ...a,
+    createdAt: a.createdAt.toISOString(),
+  }));
+
+  return (
+    <AdminPerfil
+      session={session as Session}
+      rotas={rotas}
+      abastecimentos={abastecimentos}
+    />
+  );
 }

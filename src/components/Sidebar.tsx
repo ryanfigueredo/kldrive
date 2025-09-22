@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Fuel, BarChart2, Route } from "lucide-react";
+import { Home, BarChart2, Route } from "lucide-react";
 import { Session } from "next-auth";
 import { useState } from "react";
 import Image from "next/image";
@@ -22,11 +22,7 @@ export function Sidebar({ session }: SidebarProps) {
           icon={<Home size={24} />}
           label="Dashboard"
         />
-        <SidebarNavLink
-          href="/abastecimento/novo"
-          icon={<Fuel size={24} />}
-          label="Abastecer"
-        />
+        {/* Abastecimento removido: fluxo migrado para importação admin */}
 
         <SidebarNavLink
           href="/rota/nova"

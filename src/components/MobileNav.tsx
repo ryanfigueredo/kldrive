@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Fuel, BarChart2, Route } from "lucide-react";
+import { Home, BarChart2, Route } from "lucide-react";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
@@ -24,12 +24,7 @@ export default function MobileNav({ session }: MobileNavProps) {
         <Home className="w-5 h-5" />
       </Link>
 
-      <Link
-        href="/abastecimento/novo"
-        className="flex flex-col items-center gap-1"
-      >
-        <Fuel className="w-5 h-5" />
-      </Link>
+      {/* Abastecimento removido: fluxo migrado para importação admin */}
 
       <Link href="/rota/nova" className="flex flex-col items-center gap-1">
         <Route className="w-5 h-5" />
