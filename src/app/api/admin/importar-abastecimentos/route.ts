@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
           valor,
           kmAtual,
           situacaoTanque: "CHEIO",
-          photoUrl: "/placeholder.jpg",
+          photoUrl: "",
           observacao: "Importado XLSX",
           createdAt: dataTransacao,
           user: { connect: { email: token.email! } },

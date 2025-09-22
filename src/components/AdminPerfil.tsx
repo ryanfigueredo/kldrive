@@ -338,25 +338,35 @@ export default function AdminPerfil({
                   {grupo.entradas.map((e) => (
                     <div key={e.id} className="flex gap-3 items-start">
                       <div className="relative">
-                        <Image
-                          src={e.photoUrl}
-                          alt="Imagem"
-                          width={64}
-                          height={64}
-                          className="w-16 h-16 object-cover rounded-md cursor-pointer"
-                          onClick={() =>
-                            abrirModalImagem(
-                              e.photoUrl,
-                              ("kmSaida" in e
-                                ? (e as RotaRecord).kmSaida
-                                : (e as AbastecimentoRecord).kmAtual) ?? 0,
-                              "partida" in e ? (e as RotaRecord).partida : "—",
-                              "destino" in e ? (e as RotaRecord).destino : "—",
-                              e.vehicle?.placa ?? "-",
-                              e.user?.name ?? "-"
-                            )
-                          }
-                        />
+                        {e.photoUrl ? (
+                          <Image
+                            src={e.photoUrl}
+                            alt="Imagem"
+                            width={64}
+                            height={64}
+                            className="w-16 h-16 object-cover rounded-md cursor-pointer"
+                            onClick={() =>
+                              abrirModalImagem(
+                                e.photoUrl,
+                                ("kmSaida" in e
+                                  ? (e as RotaRecord).kmSaida
+                                  : (e as AbastecimentoRecord).kmAtual) ?? 0,
+                                "partida" in e
+                                  ? (e as RotaRecord).partida
+                                  : "—",
+                                "destino" in e
+                                  ? (e as RotaRecord).destino
+                                  : "—",
+                                e.vehicle?.placa ?? "-",
+                                e.user?.name ?? "-"
+                              )
+                            }
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-md bg-gray-200 flex items-center justify-center text-[10px] text-gray-500">
+                            sem foto
+                          </div>
+                        )}
                         <Badge
                           className="absolute -top-2 -right-2"
                           variant={e.tipo === "ROTA" ? "secondary" : "default"}
