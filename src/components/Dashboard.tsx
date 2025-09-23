@@ -37,10 +37,6 @@ export function Dashboard({ session }: { session: Session }) {
   const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
   const router = useRouter();
 
-  function irParaNovoAbastecimento() {
-    router.push("/abastecimento/novo");
-  }
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -82,10 +78,6 @@ export function Dashboard({ session }: { session: Session }) {
       )}
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <Button className="mb-6" onClick={irParaNovoAbastecimento}>
-          Registrar Abastecimento
-        </Button>
-
         <Button className="mb-6" onClick={() => router.push("/rota/nova")}>
           Registrar Rota
         </Button>
