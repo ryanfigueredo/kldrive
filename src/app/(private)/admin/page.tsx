@@ -19,12 +19,12 @@ export default async function AdminPage() {
     prisma.rotaRecord.findMany({
       include: {
         user: true,
-        vehicle: true,
+        vehicle: { include: { users: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
     prisma.fuelRecord.findMany({
-      include: { user: true, vehicle: true },
+      include: { user: true, vehicle: { include: { users: true } } },
       orderBy: { createdAt: "desc" },
     }),
   ]);

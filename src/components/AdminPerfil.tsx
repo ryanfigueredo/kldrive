@@ -3,11 +3,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RegistroItem } from "@/components/RegistroItem";
+// import { RegistroItem } from "@/components/RegistroItem";
 import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
 import { VincularUsuarioDialog } from "@/components/VincularUsuarioDialog";
-import { Car, Fuel, Gauge, Users } from "lucide-react";
+import { Fuel, Users, ChevronDown, ChevronRight } from "lucide-react";
 import { ListaUsuariosCadastrados } from "./ListaUsuariosCadastrados";
 import { ListaVeiculosCadastrados } from "./ListaVeiculosCadastrados";
 import DashboardGraficos from "./AdminGraficos";
@@ -25,17 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-interface Registro {
-  id: string;
-  tipo: "KM" | "ABASTECIMENTO";
-  placa: string;
-  usuario: string;
-  valor: number;
-  km: number;
-  imagem: string;
-  data: string;
-}
 
 interface GraficoData {
   totalKm?: number;
@@ -64,7 +53,7 @@ interface RotaRecord {
   realizouAbastecimento: boolean;
   createdAt: string;
   user?: { name?: string };
-  vehicle?: { placa?: string };
+  vehicle?: { placa?: string; users?: { name?: string }[] };
   vehicleId?: string;
 }
 
@@ -76,7 +65,7 @@ interface AbastecimentoRecord {
   photoUrl: string;
   createdAt: string;
   user?: { name?: string };
-  vehicle?: { placa?: string };
+  vehicle?: { placa?: string; users?: { name?: string }[] };
   vehicleId?: string;
 }
 
@@ -89,7 +78,6 @@ export default function AdminPerfil({
   rotas: RotaRecord[];
   abastecimentos?: AbastecimentoRecord[];
 }) {
-  const [registros, setRegistros] = useState<Registro[]>([]);
   const [graficoData, setGraficoData] = useState<GraficoData>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +92,7 @@ export default function AdminPerfil({
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const [importResult, setImportResult] = useState<null | {
     processed: number;
     inserted: number;
@@ -146,6 +135,32 @@ export default function AdminPerfil({
 
     return { rotasFiltradas: r, abastecimentosFiltrados: a };
   }, [rotas, abastecimentos, filtroDataInicio, filtroDataFim]);
+
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const formatBRL = (v: number) =>
+    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const getGroupSummary = (grupo: {
+    placa: string;
+    entradas: (RotaRecord | AbastecimentoRecord)[];
+  }) => {
+    let total = 0;
+    const names = new Set<string>();
+    for (const e of grupo.entradas) {
+      const isAbastecimento = (e as AbastecimentoRecord).valor !== undefined;
+      if (isAbastecimento) {
+        total += (e as AbastecimentoRecord).valor ?? 0;
+      }
+      const vehUsers = (e as RotaRecord | AbastecimentoRecord).vehicle?.users;
+      if (vehUsers && vehUsers.length) {
+        vehUsers.forEach((u) => u?.name && names.add(u.name));
+      } else if ((e as RotaRecord | AbastecimentoRecord).user?.name) {
+        names.add((e as RotaRecord | AbastecimentoRecord).user!.name as string);
+      }
+    }
+    return { total, users: Array.from(names).join(", ") };
+  };
 
   const gruposPorVeiculo = useMemo(() => {
     type Entrada =
@@ -234,18 +249,36 @@ export default function AdminPerfil({
       setLoading(true);
       setError(null);
       try {
+        const formatDate = (d?: Date) =>
+          d
+            ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+                2,
+                "0"
+              )}-${String(d.getDate()).padStart(2, "0")}`
+            : undefined;
+
+        const start = formatDate(filtroDataInicio);
+        const end = formatDate(filtroDataFim);
+
+        const params = new URLSearchParams();
+        if (start) params.set("startDate", start);
+        if (end) params.set("endDate", end);
+
         const [registrosRes, dashboardRes] = await Promise.all([
           fetch(`/api/admin/registros`),
-          fetch(`/api/admin/dashboard-metrics`),
+          fetch(
+            `/api/admin/dashboard-metrics${
+              params.toString() ? `?${params.toString()}` : ""
+            }`
+          ),
         ]);
 
         if (!registrosRes.ok || !dashboardRes.ok)
           throw new Error("Erro ao carregar dados.");
 
-        const registrosData: Registro[] = await registrosRes.json();
+        await registrosRes.json();
         const dashboardData: GraficoData = await dashboardRes.json();
 
-        setRegistros(registrosData ?? []);
         setGraficoData(dashboardData ?? {});
       } catch {
         setError("Erro ao carregar dados do dashboard.");
@@ -255,10 +288,10 @@ export default function AdminPerfil({
     };
 
     fetchData();
-  }, []);
+  }, [filtroDataInicio, filtroDataFim]);
 
   return (
-    <main className="min-h-screen px-4 py-6">
+    <main className="min-h-screen py-6">
       <h1 className="text-2xl font-bold tracking-tight mb-6">
         Painel Administrativo
       </h1>
@@ -298,9 +331,16 @@ export default function AdminPerfil({
           <Button
             variant="default"
             onClick={() => fileInputRef.current?.click()}
-            className="bg-[#c8d22c] text-black hover:bg-[#b7c11d]"
+            className="bg-[#c8d22c] text-white hover:bg-[#b7c11d]"
           >
-            Importar Ticket Log (.xlsx)
+            Importar Ticket Log
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setManualOpen(true)}
+            className="bg-gray-200 text-black hover:bg-gray-300"
+          >
+            Registrar Abastecimento (Admin)
           </Button>
         </div>
       </div>
@@ -320,6 +360,31 @@ export default function AdminPerfil({
 
         <FiltroRotas onFiltroChange={handleFiltroChange} />
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
+          <EstatisticaCard
+            titulo="Valor Total Abastecido"
+            valor={`R$ ${
+              graficoData.totalValorAbastecido?.toFixed(2) ?? "0.00"
+            }`}
+            valorAtual={graficoData.totalValorAbastecido ?? 0}
+            valorAnterior={
+              graficoData.historicoComparativo?.valorAbastecidoAnterior ?? 0
+            }
+            icone={<Fuel className="h-4 w-4" />}
+            sufixo="R$"
+          />
+
+          <EstatisticaCard
+            titulo="Registros de Abastecimento"
+            valor={`${graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}`}
+            valorAtual={graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
+            valorAnterior={
+              graficoData.historicoComparativo?.qtdAbastecimentoAnterior ?? 0
+            }
+            icone={<Users className="h-4 w-4" />}
+          />
+        </div>
+
         {/* Grid de colunas por veículo */}
         {gruposPorVeiculo.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-8">
@@ -327,114 +392,161 @@ export default function AdminPerfil({
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {gruposPorVeiculo.map((grupo) => (
-              <Card key={grupo.placa} className="bg-white text-black">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-semibold">
-                    Veículo {grupo.placa}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                  {grupo.entradas.map((e) => (
-                    <div key={e.id} className="flex gap-3 items-start">
-                      <div className="relative">
-                        {e.photoUrl ? (
-                          <Image
-                            src={e.photoUrl}
-                            alt="Imagem"
-                            width={64}
-                            height={64}
-                            className="w-16 h-16 object-cover rounded-md cursor-pointer"
-                            onClick={() =>
-                              abrirModalImagem(
-                                e.photoUrl,
-                                ("kmSaida" in e
-                                  ? (e as RotaRecord).kmSaida
-                                  : (e as AbastecimentoRecord).kmAtual) ?? 0,
-                                "partida" in e
-                                  ? (e as RotaRecord).partida
-                                  : "—",
-                                "destino" in e
-                                  ? (e as RotaRecord).destino
-                                  : "—",
-                                e.vehicle?.placa ?? "-",
-                                e.user?.name ?? "-"
-                              )
-                            }
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-md bg-gray-200 flex items-center justify-center text-[10px] text-gray-500">
-                            sem foto
-                          </div>
-                        )}
-                        <Badge
-                          className="absolute -top-2 -right-2"
-                          variant={e.tipo === "ROTA" ? "secondary" : "default"}
-                        >
-                          {e.tipo === "ROTA" ? "Rota" : "Abastecimento"}
-                        </Badge>
-                      </div>
-                      <div className="flex-1 text-sm">
-                        {e.tipo === "ROTA" ? (
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-semibold">
-                                {(e as RotaRecord).kmSaida.toLocaleString()} km
-                              </p>
-                              <p className="text-gray-600">
-                                <strong>{(e as RotaRecord).partida}</strong> →{" "}
-                                <strong>{(e as RotaRecord).destino}</strong>
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              {(e as RotaRecord).alterouRota && (
-                                <Badge variant="destructive">
-                                  Rota Alterada
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-semibold">
-                                R$ {(e as AbastecimentoRecord).valor.toFixed(2)}
-                              </p>
-                              <p className="text-gray-600">
-                                {(e as AbastecimentoRecord).litros.toFixed(2)} L
-                                • {(e as AbastecimentoRecord).kmAtual} km
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-500 mt-1">
-                          <p>
-                            <strong>Data:</strong>{" "}
-                            {new Date(e.createdAt).toLocaleString("pt-BR")}
-                          </p>
-                          <p>
-                            <strong>Veículo:</strong> {e.vehicle?.placa ?? "-"}
-                          </p>
-                          <p>
-                            <strong>Colaborador:</strong> {e.user?.name ?? "-"}
-                          </p>
-                        </div>
-                        {e.tipo === "ROTA" &&
-                          (e as RotaRecord).alterouRota &&
-                          (e as RotaRecord).alteracaoRota && (
-                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                              <p className="text-xs text-yellow-800">
-                                <strong>Alteração:</strong>{" "}
-                                {(e as RotaRecord).alteracaoRota}
-                              </p>
-                            </div>
-                          )}
-                      </div>
+            {gruposPorVeiculo.map((grupo) => {
+              const summary = getGroupSummary(grupo);
+              const isCollapsed = collapsed[grupo.placa] ?? true;
+              return (
+                <Card key={grupo.placa} className="bg-white text-black">
+                  <CardHeader className="pb-2 flex flex-row items-start justify-between">
+                    <div>
+                      <CardTitle className="text-base font-semibold">
+                        Veículo {grupo.placa}
+                      </CardTitle>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Colaborador: {summary.users || "-"} • Total gasto:{" "}
+                        {formatBRL(summary.total)} • {grupo.entradas.length}{" "}
+                        registro
+                        {grupo.entradas.length !== 1 ? "s" : ""}
+                      </p>
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
+                    <button
+                      aria-label="Alternar"
+                      className="p-1 rounded hover:bg-gray-100 text-gray-700"
+                      onClick={() =>
+                        setCollapsed((prev) => ({
+                          ...prev,
+                          [grupo.placa]: !isCollapsed,
+                        }))
+                      }
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="h-5 w-5" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5" />
+                      )}
+                    </button>
+                  </CardHeader>
+                  {!isCollapsed && (
+                    <CardContent className="flex flex-col gap-3">
+                      {grupo.entradas.map((e) => (
+                        <div key={e.id} className="flex gap-3 items-start">
+                          <div className="relative">
+                            {e.photoUrl ? (
+                              <Image
+                                src={e.photoUrl}
+                                alt="Imagem"
+                                width={64}
+                                height={64}
+                                className="w-16 h-16 object-cover rounded-md cursor-pointer"
+                                onClick={() =>
+                                  abrirModalImagem(
+                                    e.photoUrl,
+                                    ("kmSaida" in e
+                                      ? (e as RotaRecord).kmSaida
+                                      : (e as AbastecimentoRecord).kmAtual) ??
+                                      0,
+                                    "partida" in e
+                                      ? (e as RotaRecord).partida
+                                      : "—",
+                                    "destino" in e
+                                      ? (e as RotaRecord).destino
+                                      : "—",
+                                    e.vehicle?.placa ?? "-",
+                                    e.user?.name ?? "-"
+                                  )
+                                }
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-md bg-gray-200 flex items-center justify-center text-[10px] text-gray-500">
+                                sem foto
+                              </div>
+                            )}
+                            <Badge
+                              className="absolute -top-2 -right-2"
+                              variant={
+                                e.tipo === "ROTA" ? "secondary" : "default"
+                              }
+                            >
+                              {e.tipo === "ROTA" ? "Rota" : "Abastecimento"}
+                            </Badge>
+                          </div>
+                          <div className="flex-1 text-sm">
+                            {e.tipo === "ROTA" ? (
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className="font-semibold">
+                                    {(e as RotaRecord).kmSaida.toLocaleString()}{" "}
+                                    km
+                                  </p>
+                                  <p className="text-gray-600">
+                                    <strong>{(e as RotaRecord).partida}</strong>{" "}
+                                    →{" "}
+                                    <strong>{(e as RotaRecord).destino}</strong>
+                                  </p>
+                                </div>
+                                <div className="flex gap-2">
+                                  {(e as RotaRecord).alterouRota && (
+                                    <Badge variant="destructive">
+                                      Rota Alterada
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className="font-semibold">
+                                    R${" "}
+                                    {(e as AbastecimentoRecord).valor.toFixed(
+                                      2
+                                    )}
+                                  </p>
+                                  <p className="text-gray-600">
+                                    {(e as AbastecimentoRecord).litros.toFixed(
+                                      2
+                                    )}{" "}
+                                    L • {(e as AbastecimentoRecord).kmAtual} km
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-500 mt-1">
+                              <p>
+                                <strong>Data:</strong>{" "}
+                                {new Date(e.createdAt).toLocaleString("pt-BR")}
+                              </p>
+                              <p>
+                                <strong>Veículo:</strong>{" "}
+                                {e.vehicle?.placa ?? "-"}
+                              </p>
+                              <p>
+                                <strong>Colaborador:</strong>{" "}
+                                {e.vehicle?.placa && e.vehicle?.users?.length
+                                  ? e.vehicle.users
+                                      .map((u) => u?.name)
+                                      .filter(Boolean)
+                                      .join(", ")
+                                  : e.user?.name ?? "-"}
+                              </p>
+                            </div>
+                            {e.tipo === "ROTA" &&
+                              (e as RotaRecord).alterouRota &&
+                              (e as RotaRecord).alteracaoRota && (
+                                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                                  <p className="text-xs text-yellow-800">
+                                    <strong>Alteração:</strong>{" "}
+                                    {(e as RotaRecord).alteracaoRota}
+                                  </p>
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         )}
       </section>
@@ -448,75 +560,10 @@ export default function AdminPerfil({
         subtitle={modalImageSubtitle}
       />
 
-      {/* Resto do componente permanece igual... */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <EstatisticaCard
-          titulo="Total KM Rodado"
-          valor={`${graficoData.totalKm?.toLocaleString() ?? "0"} km`}
-          valorAtual={graficoData.totalKm ?? 0}
-          valorAnterior={graficoData.historicoComparativo?.kmAnterior ?? 0}
-          icone={<Gauge className="h-4 w-4" />}
-          sufixo="km"
-        />
-        <EstatisticaCard
-          titulo="Valor Total Abastecido"
-          valor={`R$ ${graficoData.totalValorAbastecido?.toFixed(2) ?? "0.00"}`}
-          valorAtual={graficoData.totalValorAbastecido ?? 0}
-          valorAnterior={
-            graficoData.historicoComparativo?.valorAbastecidoAnterior ?? 0
-          }
-          icone={<Fuel className="h-4 w-4" />}
-          sufixo="R$"
-        />
-        <EstatisticaCard
-          titulo="Registros de KM"
-          valor={`${graficoData.totalPorTipo?.KM ?? 0}`}
-          valorAtual={graficoData.totalPorTipo?.KM ?? 0}
-          valorAnterior={graficoData.historicoComparativo?.qtdKmAnterior ?? 0}
-          icone={<Car className="h-4 w-4" />}
-        />
-        <EstatisticaCard
-          titulo="Registros de Abastecimento"
-          valor={`${graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}`}
-          valorAtual={graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
-          valorAnterior={
-            graficoData.historicoComparativo?.qtdAbastecimentoAnterior ?? 0
-          }
-          icone={<Users className="h-4 w-4" />}
-        />
-      </div>
-
-      <div className="flex py-8 gap-8">
-        <div className="items-start grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-          <ListaUsuariosCadastrados />
-          <ListaVeiculosCadastrados />
-          <Card className=" bg-white h-full text-black dark:text-white shadow-xl rounded-xl border-none ">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">
-                Últimos Registros
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {registros.length > 0 ? (
-                registros.map((r) => (
-                  <RegistroItem
-                    key={r.id}
-                    r={r}
-                    onImageClick={(src) => {
-                      setModalImageUrl(src);
-                      setModalImageTitle(`${r.tipo} - ${r.placa}`);
-                    }}
-                  />
-                ))
-              ) : !loading ? (
-                <p className="text-gray-400">Nenhum registro encontrado.</p>
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <DashboardGraficos registros={registros} graficoData={graficoData} />
+      <DashboardGraficos
+        graficoData={graficoData}
+        abastecimentos={abastecimentosFiltrados}
+      />
 
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent className="max-w-3xl bg-white text-black dark:bg-neutral-900 dark:text-white">
@@ -561,18 +608,27 @@ export default function AdminPerfil({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {importResult.insertedItems?.map((it) => (
-                          <tr key={`i-${it.row}`} className="border-t">
-                            <td className="p-2">{it.row}</td>
-                            <td className="p-2">{it.placa}</td>
-                            <td className="p-2">
-                              {new Date(it.data).toLocaleString("pt-BR")}
-                            </td>
-                            <td className="p-2">{it.litros}</td>
-                            <td className="p-2">R$ {it.valor.toFixed(2)}</td>
-                            <td className="p-2">{it.kmAtual}</td>
-                          </tr>
-                        ))}
+                        {importResult.insertedItems?.map(
+                          (it: {
+                            row: number;
+                            placa: string;
+                            data: string;
+                            litros: number;
+                            valor: number;
+                            kmAtual: number;
+                          }) => (
+                            <tr key={`i-${it.row}`} className="border-t">
+                              <td className="p-2">{it.row}</td>
+                              <td className="p-2">{it.placa}</td>
+                              <td className="p-2">
+                                {new Date(it.data).toLocaleString("pt-BR")}
+                              </td>
+                              <td className="p-2">{it.litros}</td>
+                              <td className="p-2">R$ {it.valor.toFixed(2)}</td>
+                              <td className="p-2">{it.kmAtual}</td>
+                            </tr>
+                          )
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -593,13 +649,18 @@ export default function AdminPerfil({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {importResult.details?.map((d, idx: number) => (
-                          <tr key={`d-${idx}`} className="border-t">
-                            <td className="p-2">{d.row}</td>
-                            <td className="p-2">{d.placa ?? "-"}</td>
-                            <td className="p-2">{d.reason}</td>
-                          </tr>
-                        ))}
+                        {importResult.details?.map(
+                          (
+                            d: { row: number; placa?: string; reason: string },
+                            idx: number
+                          ) => (
+                            <tr key={`d-${idx}`} className="border-t">
+                              <td className="p-2">{d.row}</td>
+                              <td className="p-2">{d.placa ?? "-"}</td>
+                              <td className="p-2">{d.reason}</td>
+                            </tr>
+                          )
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -619,6 +680,141 @@ export default function AdminPerfil({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Registrar Manual */}
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-w-md bg-white text-black dark:bg-neutral-900 dark:text-white">
+          <DialogHeader>
+            <DialogTitle>Registrar abastecimento manual</DialogTitle>
+          </DialogHeader>
+          <ManualForm onClose={() => setManualOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex py-8 gap-8">
+        <div className="items-start grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <ListaUsuariosCadastrados />
+          <ListaVeiculosCadastrados />
+        </div>
+      </div>
     </main>
+  );
+}
+
+function ManualForm({ onClose }: { onClose: () => void }) {
+  const [vehicles, setVehicles] = useState<{ id: string; placa: string }[]>([]);
+  const [vehicleId, setVehicleId] = useState<string>("");
+  const [litros, setLitros] = useState<string>("");
+  const [valor, setValor] = useState<string>("");
+  const [kmAtual, setKmAtual] = useState<string>("");
+  const [dataHora, setDataHora] = useState<string>("");
+  const [observacao, setObservacao] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/veiculos");
+        const list: { id: string; placa: string }[] = await res.json();
+        setVehicles((list || []).map((v) => ({ id: v.id, placa: v.placa })));
+      } catch {
+        setVehicles([]);
+      }
+    })();
+  }, []);
+
+  const submit = async () => {
+    if (!vehicleId || !litros || !valor || !kmAtual) {
+      alert("Preencha veículo, litros, valor e km.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/registrar-abastecimento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicleId,
+          litros,
+          valor,
+          kmAtual,
+          dataHora,
+          observacao,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(`Erro: ${err.error ?? res.status}`);
+        setSaving(false);
+        return;
+      }
+      onClose();
+      window.location.reload();
+    } catch {
+      alert("Erro ao salvar");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <label className="text-sm">Veículo</label>
+      <select
+        className="border rounded p-2 text-black"
+        value={vehicleId}
+        onChange={(e) => setVehicleId(e.target.value)}
+      >
+        <option value="">Selecione</option>
+        {vehicles.map((v) => (
+          <option key={v.id} value={v.id}>
+            {v.placa}
+          </option>
+        ))}
+      </select>
+
+      <input
+        className="border rounded p-2 text-black"
+        placeholder="Litros"
+        type="number"
+        value={litros}
+        onChange={(e) => setLitros(e.target.value)}
+      />
+      <input
+        className="border rounded p-2 text-black"
+        placeholder="Valor (R$)"
+        type="number"
+        step="0.01"
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+      />
+      <input
+        className="border rounded p-2 text-black"
+        placeholder="KM atual"
+        type="number"
+        value={kmAtual}
+        onChange={(e) => setKmAtual(e.target.value)}
+      />
+      <input
+        className="border rounded p-2 text-black"
+        placeholder="Data/hora (opcional)"
+        type="datetime-local"
+        value={dataHora}
+        onChange={(e) => setDataHora(e.target.value)}
+      />
+      <textarea
+        className="border rounded p-2 text-black"
+        placeholder="Observação (opcional)"
+        value={observacao}
+        onChange={(e) => setObservacao(e.target.value)}
+      />
+      <div className="flex justify-end gap-2 mt-1">
+        <Button variant="outline" onClick={onClose} disabled={saving}>
+          Cancelar
+        </Button>
+        <Button onClick={submit} disabled={saving}>
+          {saving ? "Salvando..." : "Salvar"}
+        </Button>
+      </div>
+    </div>
   );
 }

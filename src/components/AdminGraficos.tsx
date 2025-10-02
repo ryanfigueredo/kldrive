@@ -7,60 +7,60 @@ import {
   Tooltip,
   AreaChart,
   Area,
-  ComposedChart,
   Bar,
   Legend,
+  BarChart,
+  CartesianGrid,
 } from "recharts";
 
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/charts";
-import { ChartRadialSimple } from "@/components/ChartRadialSimple";
-
-interface Registro {
-  id: string;
-  tipo: "KM" | "ABASTECIMENTO";
-  placa: string;
-  usuario: string;
-  valor: number;
-  km: number;
-  imagem: string;
-  data: string;
-}
 
 interface GraficoData {
   kmPorData?: Record<string, number>;
 }
 
 interface Props {
-  registros: Registro[];
   graficoData: GraficoData;
+  abastecimentos?: Array<{
+    createdAt: string;
+    valor: number;
+    user?: { name?: string; email?: string } | null;
+    vehicle?: {
+      users?: Array<{ name?: string; email?: string } | null>;
+    } | null;
+  }>;
 }
 
-export default function DashboardGraficos({ registros, graficoData }: Props) {
+export default function DashboardGraficos({
+  graficoData,
+  abastecimentos = [],
+}: Props) {
   const dadosGraficoArea = graficoData.kmPorData
     ? Object.entries(graficoData.kmPorData).map(([data, km]) => ({ data, km }))
     : [];
 
-  type CompostoData = {
-    [data: string]: {
-      data: string;
-      [usuario: string]: number | string;
-    };
-  };
+  // Agrega consumo por usuário para um ranking simples (total por período)
+  const consumoPorUsuario: Record<string, number> = {};
+  for (const ab of abastecimentos) {
+    const linkedUsers = ab.vehicle?.users
+      ?.map((u) => u?.name)
+      .filter(Boolean) as string[] | undefined;
+    const usuarios =
+      linkedUsers && linkedUsers.length > 0
+        ? linkedUsers
+        : [ab.user?.name || "Desconhecido"];
+    const share = usuarios.length > 0 ? ab.valor / usuarios.length : ab.valor;
+    usuarios.forEach((nome) => {
+      consumoPorUsuario[nome] = (consumoPorUsuario[nome] ?? 0) + share;
+    });
+  }
 
-  const dadosBarChart: CompostoData = registros
-    .filter((r) => r.tipo === "ABASTECIMENTO")
-    .reduce((acc, r) => {
-      const dia = r.data.split("T")[0];
-      if (!acc[dia]) acc[dia] = { data: dia };
-      acc[dia][r.usuario] = ((acc[dia][r.usuario] ?? 0) as number) + r.valor;
-      return acc;
-    }, {} as CompostoData);
-
-  const dadosGraficoComposto = Object.values(dadosBarChart);
+  const dadosPorUsuario = Object.entries(consumoPorUsuario)
+    .map(([usuario, valor]) => ({ usuario, valor }))
+    .sort((a, b) => b.valor - a.valor);
 
   return (
     <div className="flex flex-col gap-6">
-      <ChartRadialSimple />
       {dadosGraficoArea.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-2">KM rodado por dia</h2>
@@ -82,31 +82,39 @@ export default function DashboardGraficos({ registros, graficoData }: Props) {
         </div>
       )}
 
-      {dadosGraficoComposto.length > 0 && (
+      {dadosPorUsuario.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-2">
-            Consumo de combustível por usuário
+            Consumo de combustível por usuário (total)
           </h2>
           <ChartContainer>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={dadosGraficoComposto} stackOffset="expand">
-                <XAxis dataKey="data" />
-                <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Legend />
-                {registros
-                  .filter((r) => r.tipo === "ABASTECIMENTO")
-                  .map((r) => r.usuario)
-                  .filter((v, i, arr) => arr.indexOf(v) === i)
-                  .map((usuario, idx) => (
-                    <Bar
-                      key={usuario}
-                      dataKey={usuario}
-                      stackId="a"
-                      fill={idx % 2 === 0 ? "#5D9CEC" : "#ED5565"}
+            <ResponsiveContainer
+              width="100%"
+              height={40 * Math.max(4, dadosPorUsuario.length)}
+            >
+              <BarChart
+                data={dadosPorUsuario}
+                layout="vertical"
+                margin={{ left: 24, right: 16, top: 8, bottom: 8 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  tickFormatter={(v) => `R$ ${Number(v).toFixed(0)}`}
+                />
+                <YAxis type="category" dataKey="usuario" width={160} />
+                <Tooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(v: number | string) =>
+                        `R$ ${Number(v).toFixed(2)}`
+                      }
                     />
-                  ))}
-              </ComposedChart>
+                  }
+                />
+                <Bar dataKey="valor" fill="#5D9CEC" radius={[4, 4, 4, 4]} />
+                <Legend />
+              </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
         </div>

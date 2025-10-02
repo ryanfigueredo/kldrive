@@ -22,18 +22,29 @@ export async function GET(req: NextRequest) {
   if (usuario) filtros.userId = usuario;
   if (veiculo) filtros.vehicleId = veiculo;
 
-  // Mês atual
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfCurrentMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59
+  );
+
+  // Se não foi informado período, aplica mês atual ANTES de buscar
+  if (!startDate && !endDate) {
+    filtros.createdAt = { gte: startOfCurrentMonth, lte: endOfCurrentMonth };
+  }
+
+  // Mês atual (ou período filtrado)
   const [km, fuel] = await Promise.all([
     prisma.kmRecord.findMany({ where: filtros, include: { user: true } }),
     prisma.fuelRecord.findMany({ where: filtros, include: { user: true } }),
   ]);
 
   // Mês anterior
-  const now = new Date();
-  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  if (!startDate && !endDate) {
-    filtros.createdAt = { gte: startOfCurrentMonth };
-  }
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfLastMonth = new Date(
     now.getFullYear(),

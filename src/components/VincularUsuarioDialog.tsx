@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { UserRoundPlus } from "lucide-react";
+// import { UserRoundPlus } from "lucide-react";
 
 interface Usuario {
   id: string;
@@ -82,10 +82,7 @@ export function VincularUsuarioDialog({ onVincular }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <UserRoundPlus className="w-4 h-4 mr-2" />
-          Vincular Usuário
-        </Button>
+        <Button>Vincular Usuário</Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl bg-white dark:bg-zinc-900 text-black dark:text-white border border-border shadow-xl rounded-xl">
         <DialogHeader>

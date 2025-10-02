@@ -22,14 +22,12 @@ export default function ClientLayout({ session, children }: ClientLayoutProps) {
     <>
       {isLoggedIn && (
         <>
-          <div className="hidden md:flex fixed top-0 left-0 bottom-0 w-64">
+          <div className="hidden md:flex fixed top-0 left-0 bottom-0 w-16">
             <Sidebar session={session} />
-          </div>
-
+          </div>{" "}
           <div className="fixed top-0 left-0 right-0 h-16 z-50">
             <Header />
           </div>
-
           <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md">
             <MobileNav session={session} />
           </div>
@@ -37,9 +35,11 @@ export default function ClientLayout({ session, children }: ClientLayoutProps) {
       )}
 
       <main
-        className={`${isLoggedIn ? "md:ml-64 pt-16" : ""} p-4 min-h-screen`}
+        className={`${
+          isLoggedIn ? "md:ml-16 pt-16" : ""
+        } px-4 md:px-8 lg:px-10 min-h-screen`}
       >
-        {children}
+        <div className="max-w-screen-2xl mx-auto w-full">{children}</div>
       </main>
     </>
   );
