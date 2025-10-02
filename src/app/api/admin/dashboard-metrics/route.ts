@@ -8,34 +8,34 @@ export async function GET(req: NextRequest) {
   const usuario = searchParams.get("usuario");
   const veiculo = searchParams.get("veiculo");
 
-  const dateFilter: { gte?: Date; lte?: Date } = {};
-  if (startDate) dateFilter.gte = new Date(startDate + "T00:00:00");
-  if (endDate) dateFilter.lte = new Date(endDate + "T23:59:59");
+  // Usaremos intervalo [gte, lt) para evitar perdas/duplas por precisão/fuso
+  const dateFilterExclusive: { gte?: Date; lt?: Date } = {};
+  if (startDate) dateFilterExclusive.gte = new Date(startDate + "T00:00:00");
+  if (endDate) {
+    const end = new Date(endDate + "T00:00:00");
+    // fim exclusivo = dia seguinte 00:00
+    dateFilterExclusive.lt = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+  }
 
   const filtros: {
-    createdAt?: typeof dateFilter;
+    createdAt?: typeof dateFilterExclusive;
     userId?: string;
     vehicleId?: string;
   } = {};
 
-  if (Object.keys(dateFilter).length) filtros.createdAt = dateFilter;
+  if (Object.keys(dateFilterExclusive).length)
+    filtros.createdAt = dateFilterExclusive;
   if (usuario) filtros.userId = usuario;
   if (veiculo) filtros.vehicleId = veiculo;
 
   const now = new Date();
   const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfCurrentMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-    23,
-    59,
-    59
-  );
+  // Limite superior exclusivo: primeiro dia do mês seguinte 00:00:00
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   // Se não foi informado período, aplica mês atual ANTES de buscar
   if (!startDate && !endDate) {
-    filtros.createdAt = { gte: startOfCurrentMonth, lte: endOfCurrentMonth };
+    filtros.createdAt = { gte: startOfCurrentMonth, lt: startOfNextMonth };
   }
 
   // Mês atual (ou período filtrado)
@@ -46,17 +46,14 @@ export async function GET(req: NextRequest) {
 
   // Mês anterior
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(
+  const endOfLastMonthExclusive = new Date(
     now.getFullYear(),
     now.getMonth(),
-    0,
-    23,
-    59,
-    59
-  );
+    1
+  ); // primeiro dia do mês atual
 
   const filtrosMesAnterior: typeof filtros = {
-    createdAt: { gte: startOfLastMonth, lte: endOfLastMonth },
+    createdAt: { gte: startOfLastMonth, lt: endOfLastMonthExclusive },
   };
   if (usuario) filtrosMesAnterior.userId = usuario;
   if (veiculo) filtrosMesAnterior.vehicleId = veiculo;
