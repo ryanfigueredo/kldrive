@@ -32,38 +32,6 @@ export function FiltroRotas({ onFiltroChange }: FiltroRotasProps) {
   const [periodo, setPeriodo] = useState<string>("");
   const [tipo, setTipo] = useState<"ALL" | "ROTA" | "ABASTECIMENTO">("ALL");
 
-  const handlePeriodoChange = (value: string) => {
-    setPeriodo(value);
-    const hoje = new Date();
-    let inicio: Date | undefined;
-    let fim: Date | undefined = hoje;
-
-    switch (value) {
-      case "hoje":
-        inicio = hoje;
-        break;
-      case "semana":
-        inicio = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case "mes":
-        inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        break;
-      case "trimestre":
-        inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 3, 1);
-        break;
-      case "ano":
-        inicio = new Date(hoje.getFullYear(), 0, 1);
-        break;
-      default:
-        inicio = dataInicio;
-        fim = dataFim;
-    }
-
-    setDataInicio(inicio);
-    setDataFim(fim);
-    onFiltroChange({ dataInicio: inicio, dataFim: fim, periodo: value, tipo });
-  };
-
   const limparFiltros = () => {
     setDataInicio(undefined);
     setDataFim(undefined);
