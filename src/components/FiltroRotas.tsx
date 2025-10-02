@@ -91,18 +91,6 @@ export function FiltroRotas({ onFiltroChange }: FiltroRotasProps) {
           <SelectItem value="ABASTECIMENTO">Apenas Abastecimentos</SelectItem>
         </SelectContent>
       </Select>
-      <Select value={periodo} onValueChange={handlePeriodoChange}>
-        <SelectTrigger className="w-40 ">
-          <SelectValue placeholder="Período" />
-        </SelectTrigger>
-        {/* <SelectContent className="bg-gray-50 text-black">
-          <SelectItem value="hoje">Hoje</SelectItem>
-          <SelectItem value="semana">Última semana</SelectItem>
-          <SelectItem value="mes">Este mês</SelectItem>
-          <SelectItem value="trimestre">Último trimestre</SelectItem>
-          <SelectItem value="ano">Este ano</SelectItem>
-        </SelectContent> */}
-      </Select>
 
       <Popover>
         <PopoverTrigger asChild>
