@@ -30,7 +30,11 @@ const RegistroItemComponent = ({ r }: RegistroItemProps) => {
           <strong>{r.tipo}</strong> – {r.placa}
         </p>
         <p>
-          {r.km} km – R${r.valor.toFixed(2)}
+          {r.km} km – R${" "}
+          {r.valor.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </p>
         <p className="text-gray-400 text-xs">{r.usuario}</p>
         <p className="text-gray-500 text-xs">

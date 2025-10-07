@@ -25,6 +25,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+  Tooltip,
+  LabelList,
+} from "recharts";
+import { formatarMoeda } from "@/lib/utils";
 
 interface GraficoData {
   totalKm?: number;
@@ -84,8 +92,17 @@ export default function AdminPerfil({
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
   const [modalImageTitle, setModalImageTitle] = useState<string>("");
   const [modalImageSubtitle, setModalImageSubtitle] = useState<string>("");
-  const [filtroDataInicio, setFiltroDataInicio] = useState<Date>();
-  const [filtroDataFim, setFiltroDataFim] = useState<Date>();
+  // Inicializar com o mês atual
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const [filtroDataInicio, setFiltroDataInicio] = useState<Date | undefined>(
+    startOfCurrentMonth
+  );
+  const [filtroDataFim, setFiltroDataFim] = useState<Date | undefined>(
+    endOfCurrentMonth
+  );
   const [filtroTipo, setFiltroTipo] = useState<
     "ALL" | "ROTA" | "ABASTECIMENTO"
   >("ALL");
@@ -211,6 +228,42 @@ export default function AdminPerfil({
 
     return gruposOrdenados;
   }, [rotasFiltradas, abastecimentosFiltrados, filtroTipo]);
+
+  // Lógica do RadialChart - Consumo por usuário
+  const consumoPorUsuario: Record<string, number> = {};
+  for (const ab of abastecimentosFiltrados) {
+    const linkedUsers = ab.vehicle?.users
+      ?.map((u) => u?.name)
+      .filter(Boolean) as string[] | undefined;
+    const usuarios =
+      linkedUsers && linkedUsers.length > 0
+        ? linkedUsers
+        : [ab.user?.name || "Desconhecido"];
+    const share = usuarios.length > 0 ? ab.valor / usuarios.length : ab.valor;
+    usuarios.forEach((nome) => {
+      consumoPorUsuario[nome] = (consumoPorUsuario[nome] ?? 0) + share;
+    });
+  }
+
+  const dadosPorUsuario = Object.entries(consumoPorUsuario)
+    .map(([usuario, valor]) => ({ usuario, valor }))
+    .sort((a, b) => b.valor - a.valor);
+
+  // Dados de teste se não houver dados reais
+  const dadosTeste = [
+    { usuario: "João Silva", valor: 500, fill: "#c8d22c" },
+    { usuario: "Maria Santos", valor: 300, fill: "#55D462" },
+    { usuario: "Pedro Costa", valor: 200, fill: "#7ED957" },
+  ];
+
+  // Aplicar cores do projeto aos dados
+  const coresProjeto = ["#c8d22c", "#55D462", "#7ED957", "#a0e76b", "#c3f480"];
+  const dadosComCores = (
+    dadosPorUsuario.length > 0 ? dadosPorUsuario : dadosTeste
+  ).map((item, index) => ({
+    ...item,
+    fill: coresProjeto[index % coresProjeto.length],
+  }));
 
   const handleFiltroChange = (filtros: {
     dataInicio?: Date;
@@ -347,42 +400,163 @@ export default function AdminPerfil({
 
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Registros por veículo</h2>
-          <Badge variant="secondary">
-            {gruposPorVeiculo.reduce((acc, g) => acc + g.entradas.length, 0)}{" "}
-            registro
-            {gruposPorVeiculo.reduce((acc, g) => acc + g.entradas.length, 0) !==
-            1
-              ? "s"
-              : ""}
-          </Badge>
+          <div>
+            <h2 className="text-lg font-semibold">Registros por veículo</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {filtroDataInicio && filtroDataFim ? (
+                <>
+                  Dados do período:{" "}
+                  {filtroDataInicio.toLocaleDateString("pt-BR")} a{" "}
+                  {filtroDataFim.toLocaleDateString("pt-BR")}
+                </>
+              ) : (
+                <>Todos os dados disponíveis</>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={
+                filtroDataInicio && filtroDataFim ? "default" : "outline"
+              }
+              size="sm"
+              onClick={() => {
+                setFiltroDataInicio(startOfCurrentMonth);
+                setFiltroDataFim(endOfCurrentMonth);
+              }}
+            >
+              Mês Atual
+            </Button>
+            <Button
+              variant={
+                !filtroDataInicio && !filtroDataFim ? "default" : "outline"
+              }
+              size="sm"
+              onClick={() => {
+                setFiltroDataInicio(undefined);
+                setFiltroDataFim(undefined);
+              }}
+            >
+              Todos os Dados
+            </Button>
+            <Badge variant="secondary">
+              {gruposPorVeiculo.reduce((acc, g) => acc + g.entradas.length, 0)}{" "}
+              registro
+              {gruposPorVeiculo.reduce(
+                (acc, g) => acc + g.entradas.length,
+                0
+              ) !== 1
+                ? "s"
+                : ""}
+            </Badge>
+          </div>
         </div>
 
         <FiltroRotas onFiltroChange={handleFiltroChange} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
-          <EstatisticaCard
-            titulo="Valor Total Abastecido"
-            valor={`R$ ${
-              graficoData.totalValorAbastecido?.toFixed(2) ?? "0.00"
-            }`}
-            valorAtual={graficoData.totalValorAbastecido ?? 0}
-            valorAnterior={
-              graficoData.historicoComparativo?.valorAbastecidoAnterior ?? 0
-            }
-            icone={<Fuel className="h-4 w-4" />}
-            sufixo="R$"
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Coluna 1: Abastecimento */}
+            <div className="space-y-3">
+              <div className="h-[120px]">
+                <EstatisticaCard
+                  titulo="Valor Total Abastecido"
+                  valor={`R$ ${
+                    graficoData.totalValorAbastecido?.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }) ?? "0,00"
+                  }`}
+                  valorAtual={graficoData.totalValorAbastecido ?? 0}
+                  valorAnterior={
+                    graficoData.historicoComparativo?.valorAbastecidoAnterior ??
+                    0
+                  }
+                  icone={<Fuel className="h-4 w-4" />}
+                  sufixo="R$"
+                />
+              </div>
 
-          <EstatisticaCard
-            titulo="Registros de Abastecimento"
-            valor={`${graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}`}
-            valorAtual={graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
-            valorAnterior={
-              graficoData.historicoComparativo?.qtdAbastecimentoAnterior ?? 0
-            }
-            icone={<Users className="h-4 w-4" />}
-          />
+              <div className="h-[120px]">
+                <EstatisticaCard
+                  titulo="Registros de Abastecimento"
+                  valor={`${graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}`}
+                  valorAtual={graficoData.totalPorTipo?.ABASTECIMENTO ?? 0}
+                  valorAnterior={
+                    graficoData.historicoComparativo
+                      ?.qtdAbastecimentoAnterior ?? 0
+                  }
+                  icone={<Users className="h-4 w-4" />}
+                />
+              </div>
+            </div>
+
+            {/* Coluna 2: KM */}
+            <div className="space-y-3">
+              <div className="h-[120px]">
+                <EstatisticaCard
+                  titulo="Total KM Rodados"
+                  valor={`${graficoData.totalKm?.toLocaleString() ?? "0"} km`}
+                  valorAtual={graficoData.totalKm ?? 0}
+                  valorAnterior={
+                    graficoData.historicoComparativo?.kmAnterior ?? 0
+                  }
+                  icone={<Fuel className="h-4 w-4" />}
+                  sufixo="km"
+                />
+              </div>
+
+              <div className="h-[120px]">
+                <EstatisticaCard
+                  titulo="Registros de KM"
+                  valor={`${graficoData.totalPorTipo?.KM ?? 0}`}
+                  valorAtual={graficoData.totalPorTipo?.KM ?? 0}
+                  valorAnterior={
+                    graficoData.historicoComparativo?.qtdKmAnterior ?? 0
+                  }
+                  icone={<Users className="h-4 w-4" />}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-1 ">
+            <Card className="h-full bg-gray-500">
+              <CardContent className="">
+                <div className="h-[225px]  pt-2 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadialBarChart
+                      data={dadosComCores}
+                      startAngle={-90}
+                      endAngle={380}
+                      innerRadius={40}
+                      outerRadius={120}
+                    >
+                      <RadialBar
+                        dataKey="valor"
+                        background={{ fill: "#f0f0f0" }}
+                        fill="black"
+                      >
+                        <LabelList
+                          position="insideStart"
+                          dataKey="usuario"
+                          fill="black"
+                          fontSize={10}
+                        />
+                      </RadialBar>
+                      <Tooltip
+                        formatter={(value: number) => [
+                          formatarMoeda(value),
+                          "Valor Gasto",
+                        ]}
+                        labelFormatter={(label: string) => `Usuário: ${label}`}
+                      />
+                    </RadialBarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Grid de colunas por veículo */}
@@ -563,6 +737,8 @@ export default function AdminPerfil({
       <DashboardGraficos
         graficoData={graficoData}
         abastecimentos={abastecimentosFiltrados}
+        filtroDataInicio={filtroDataInicio}
+        filtroDataFim={filtroDataFim}
       />
 
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
@@ -624,7 +800,13 @@ export default function AdminPerfil({
                                 {new Date(it.data).toLocaleString("pt-BR")}
                               </td>
                               <td className="p-2">{it.litros}</td>
-                              <td className="p-2">R$ {it.valor.toFixed(2)}</td>
+                              <td className="p-2">
+                                R${" "}
+                                {it.valor.toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </td>
                               <td className="p-2">{it.kmAtual}</td>
                             </tr>
                           )

@@ -107,7 +107,11 @@ export default function PerfilClient({ session }: { session: Session }) {
               <CardTitle>Valor Abastecido</CardTitle>
             </CardHeader>
             <CardContent className="text-2xl font-bold">
-              R$ {resumo.totalGasto.toFixed(2)}
+              R${" "}
+              {resumo.totalGasto.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </CardContent>
           </Card>
           <Card>
@@ -163,7 +167,11 @@ export default function PerfilClient({ session }: { session: Session }) {
               <div key={a.id} className="p-4 flex justify-between">
                 <div>
                   <p className="font-semibold">
-                    {a.litros}L - R${a.valor.toFixed(2)}
+                    {a.litros}L - R${" "}
+                    {a.valor.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </p>
                   <p className="text-xs text-gray-500">
                     KM: {a.kmAtual} • {new Date(a.createdAt).toLocaleString()}

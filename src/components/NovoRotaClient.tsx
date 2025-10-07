@@ -209,11 +209,6 @@ export default function NovoRotaClient({ session }: { session: Session }) {
               Não
             </button>
           </div>
-          {realizouAbastecimento && (
-            <div className="text-yellow-700 text-sm mt-2">
-              Não esqueça de registrar também o Abastecimento.
-            </div>
-          )}
         </div>
 
         <div className="flex gap-2">

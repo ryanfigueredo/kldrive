@@ -173,7 +173,11 @@ export function Dashboard({ session }: { session: Session }) {
                   <div className="text-sm text-gray-800">
                     <p>
                       <strong>
-                        {r.litros} L – R${r.valor.toFixed(2)}
+                        {r.litros} L – R${" "}
+                        {r.valor.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </strong>
                     </p>
                     <p className="text-xs">

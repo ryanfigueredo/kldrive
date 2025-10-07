@@ -40,7 +40,13 @@ export function ListaVeiculosCadastrados() {
               </div>
               <div className="text-right text-sm">
                 <p>KM: {v.totalKm} km</p>
-                <p>R$ {v.totalCombustivel.toFixed(2)}</p>
+                <p>
+                  R${" "}
+                  {v.totalCombustivel.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
               </div>
             </div>
           ))}

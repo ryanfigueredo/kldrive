@@ -1,124 +1,93 @@
 "use client";
 
-import {
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  AreaChart,
-  Area,
-  Bar,
-  Legend,
-  BarChart,
-  CartesianGrid,
-} from "recharts";
-
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/charts";
-
-interface GraficoData {
-  kmPorData?: Record<string, number>;
-}
+import { useEffect, useState } from "react";
 
 interface Props {
-  graficoData: GraficoData;
-  abastecimentos?: Array<{
-    createdAt: string;
-    valor: number;
-    user?: { name?: string; email?: string } | null;
-    vehicle?: {
-      users?: Array<{ name?: string; email?: string } | null>;
-    } | null;
-  }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  graficoData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  abastecimentos?: any[];
+  filtroDataInicio?: Date;
+  filtroDataFim?: Date;
 }
 
 export default function DashboardGraficos({
-  graficoData,
-  abastecimentos = [],
+  graficoData, // eslint-disable-line @typescript-eslint/no-unused-vars
+  abastecimentos = [], // eslint-disable-line @typescript-eslint/no-unused-vars
+  filtroDataInicio,
+  filtroDataFim,
 }: Props) {
-  const dadosGraficoArea = graficoData.kmPorData
-    ? Object.entries(graficoData.kmPorData).map(([data, km]) => ({ data, km }))
-    : [];
+  const [loading, setLoading] = useState(true);
 
-  // Agrega consumo por usuário para um ranking simples (total por período)
-  const consumoPorUsuario: Record<string, number> = {};
-  for (const ab of abastecimentos) {
-    const linkedUsers = ab.vehicle?.users
-      ?.map((u) => u?.name)
-      .filter(Boolean) as string[] | undefined;
-    const usuarios =
-      linkedUsers && linkedUsers.length > 0
-        ? linkedUsers
-        : [ab.user?.name || "Desconhecido"];
-    const share = usuarios.length > 0 ? ab.valor / usuarios.length : ab.valor;
-    usuarios.forEach((nome) => {
-      consumoPorUsuario[nome] = (consumoPorUsuario[nome] ?? 0) + share;
-    });
+  useEffect(() => {
+    const fetchEfficiencyMetrics = async () => {
+      try {
+        const formatDate = (d?: Date) =>
+          d
+            ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+                2,
+                "0"
+              )}-${String(d.getDate()).padStart(2, "0")}`
+            : undefined;
+
+        const start = formatDate(filtroDataInicio);
+        const end = formatDate(filtroDataFim);
+
+        const params = new URLSearchParams();
+        if (start) params.set("startDate", start);
+        if (end) params.set("endDate", end);
+
+        const response = await fetch(
+          `/api/admin/efficiency-metrics${
+            params.toString() ? `?${params.toString()}` : ""
+          }`
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Dados recebidos da API:", data);
+        } else {
+          const errorData = await response.json();
+          console.error("Erro na API:", errorData);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar métricas de eficiência:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEfficiencyMetrics();
+  }, [filtroDataInicio, filtroDataFim]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="text-center py-8">
+          Carregando métricas de eficiência...
+        </div>
+        <div className="text-center">
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch("/api/admin/debug-data");
+                const data = await response.json();
+                console.log("Debug data:", data);
+                alert(
+                  `Dados encontrados: ${JSON.stringify(data.totals, null, 2)}`
+                );
+              } catch (error) {
+                console.error("Erro ao buscar dados de debug:", error);
+              }
+            }}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded"
+          >
+            Verificar Dados no Banco
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  const dadosPorUsuario = Object.entries(consumoPorUsuario)
-    .map(([usuario, valor]) => ({ usuario, valor }))
-    .sort((a, b) => b.valor - a.valor);
-
-  return (
-    <div className="flex flex-col gap-6">
-      {dadosGraficoArea.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-2">KM rodado por dia</h2>
-          <ChartContainer>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={dadosGraficoArea}>
-                <XAxis dataKey="data" />
-                <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Area
-                  type="monotone"
-                  dataKey="km"
-                  stroke="#B0BC1D"
-                  fill="#B0BC1D"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </div>
-      )}
-
-      {dadosPorUsuario.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-2">
-            Consumo de combustível por usuário (total)
-          </h2>
-          <ChartContainer>
-            <ResponsiveContainer
-              width="100%"
-              height={40 * Math.max(4, dadosPorUsuario.length)}
-            >
-              <BarChart
-                data={dadosPorUsuario}
-                layout="vertical"
-                margin={{ left: 24, right: 16, top: 8, bottom: 8 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  type="number"
-                  tickFormatter={(v) => `R$ ${Number(v).toFixed(0)}`}
-                />
-                <YAxis type="category" dataKey="usuario" width={160} />
-                <Tooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(v: number | string) =>
-                        `R$ ${Number(v).toFixed(2)}`
-                      }
-                    />
-                  }
-                />
-                <Bar dataKey="valor" fill="#5D9CEC" radius={[4, 4, 4, 4]} />
-                <Legend />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="flex flex-col gap-6"></div>;
 }
