@@ -271,7 +271,7 @@ export default function AdminPerfil({
     // Adicionar informação sobre fonte dos dados
     if (abastecimentosOrdenados.length === 0) {
       inconsistencias.push(
-        "⚠️ Nenhum abastecimento do Ticket Log encontrado - dados podem ser imprecisos"
+        " Nenhum abastecimento do Ticket Log encontrado - dados podem ser imprecisos"
       );
     }
 
