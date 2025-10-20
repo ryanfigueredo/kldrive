@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ vehicleId: "asc" }, { createdAt: "asc" }],
     });
 
-    console.log(`🔍 Encontradas ${rotas.length} rotas para análise`);
+    console.log(` Encontradas ${rotas.length} rotas para análise`);
 
     // Calcular KM por veículo e por usuário
     const kmPorVeiculo: Record<string, number> = {};

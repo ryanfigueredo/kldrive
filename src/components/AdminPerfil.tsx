@@ -179,65 +179,78 @@ export default function AdminPerfil({
     const names = new Set<string>();
     const inconsistencias: string[] = [];
 
-    // Ordenar entradas por data para calcular KM corretamente
-    const entradasOrdenadas = [...grupo.entradas].sort(
+    // Separar abastecimentos (Ticket Log) e rotas (dados manuais)
+    const abastecimentos = grupo.entradas.filter(
+      (e) => (e as AbastecimentoRecord).valor !== undefined
+    ) as AbastecimentoRecord[];
+
+    const rotas = grupo.entradas.filter(
+      (e) => (e as RotaRecord).kmSaida !== undefined
+    ) as RotaRecord[];
+
+    // Ordenar abastecimentos por data (dados mais confiáveis do Ticket Log)
+    const abastecimentosOrdenados = [...abastecimentos].sort(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    let kmAnterior = 0;
-    let primeiroRegistro = true;
+    // Calcular KM rodados baseado nos abastecimentos (Ticket Log)
+    if (abastecimentosOrdenados.length > 0) {
+      let kmAnterior = 0;
+      let primeiroAbastecimento = true;
 
-    for (const e of entradasOrdenadas) {
-      const isAbastecimento = (e as AbastecimentoRecord).valor !== undefined;
-
-      if (isAbastecimento) {
-        const abastecimento = e as AbastecimentoRecord;
+      for (const abastecimento of abastecimentosOrdenados) {
         total += abastecimento.valor ?? 0;
         totalLitros += abastecimento.litros ?? 0;
 
-        // Verificar se a KM do abastecimento faz sentido
-        if (primeiroRegistro) {
+        if (primeiroAbastecimento) {
           kmAnterior = abastecimento.kmAtual ?? 0;
-          primeiroRegistro = false;
+          primeiroAbastecimento = false;
         } else {
           const kmAtual = abastecimento.kmAtual ?? 0;
-          if (kmAtual < kmAnterior) {
-            inconsistencias.push(
-              `KM regressiva no abastecimento: ${kmAnterior} → ${kmAtual}`
-            );
-          }
-          kmAnterior = kmAtual;
-        }
-      } else {
-        const rota = e as RotaRecord;
-        // Para rotas, a kmSaida representa a quilometragem no final da rota
-        if (primeiroRegistro) {
-          kmAnterior = rota.kmSaida ?? 0;
-          primeiroRegistro = false;
-        } else {
-          // Calcular diferença de KM entre registros
-          const kmAtual = rota.kmSaida ?? 0;
           if (kmAtual > kmAnterior) {
             totalKmRodados += kmAtual - kmAnterior;
           } else if (kmAtual < kmAnterior) {
             inconsistencias.push(
-              `KM regressiva na rota: ${kmAnterior} → ${kmAtual}`
+              `KM regressiva no Ticket Log: ${kmAnterior} → ${kmAtual} (${new Date(
+                abastecimento.createdAt
+              ).toLocaleDateString("pt-BR")})`
             );
           }
           kmAnterior = kmAtual;
         }
       }
+    }
 
+    // Verificar inconsistências entre dados do Ticket Log e rotas manuais
+    if (abastecimentosOrdenados.length > 0 && rotas.length > 0) {
+      const ultimoAbastecimento =
+        abastecimentosOrdenados[abastecimentosOrdenados.length - 1];
+      const kmTicketLog = ultimoAbastecimento.kmAtual ?? 0;
+
+      // Verificar se as rotas manuais estão próximas da KM do Ticket Log
+      rotas.forEach((rota) => {
+        const diferencaKm = Math.abs((rota.kmSaida ?? 0) - kmTicketLog);
+        if (diferencaKm > 100) {
+          // Diferença maior que 100km
+          inconsistencias.push(
+            `Diferença grande entre Ticket Log (${kmTicketLog}km) e rota manual (${rota.kmSaida}km) - ${diferencaKm}km de diferença`
+          );
+        }
+      });
+    }
+
+    // Processar usuários
+    grupo.entradas.forEach((e) => {
       const vehUsers = (e as RotaRecord | AbastecimentoRecord).vehicle?.users;
       if (vehUsers && vehUsers.length) {
         vehUsers.forEach((u) => u?.name && names.add(u.name));
       } else if ((e as RotaRecord | AbastecimentoRecord).user?.name) {
         names.add((e as RotaRecord | AbastecimentoRecord).user!.name as string);
       }
-    }
+    });
 
-    // Calcular consumo médio se houver dados suficientes
+    // Calcular consumo médio baseado nos dados do Ticket Log
     const consumoMedio =
       totalLitros > 0 && totalKmRodados > 0
         ? ((totalLitros / totalKmRodados) * 100).toFixed(2)
@@ -250,7 +263,16 @@ export default function AdminPerfil({
       parseFloat(consumoMedio) <= 20;
 
     if (consumoMedio && !consumoValido) {
-      inconsistencias.push(`Consumo suspeito: ${consumoMedio} L/100km`);
+      inconsistencias.push(
+        `Consumo suspeito: ${consumoMedio} L/100km (baseado no Ticket Log)`
+      );
+    }
+
+    // Adicionar informação sobre fonte dos dados
+    if (abastecimentosOrdenados.length === 0) {
+      inconsistencias.push(
+        "⚠️ Nenhum abastecimento do Ticket Log encontrado - dados podem ser imprecisos"
+      );
     }
 
     return {
@@ -261,6 +283,10 @@ export default function AdminPerfil({
       consumoMedio,
       inconsistencias,
       consumoValido,
+      fonteDados:
+        abastecimentosOrdenados.length > 0 ? "Ticket Log" : "Rotas Manuais",
+      qtdAbastecimentos: abastecimentosOrdenados.length,
+      qtdRotas: rotas.length,
     };
   };
 
@@ -696,22 +722,30 @@ export default function AdminPerfil({
                           <span>R$ {custoPorLitro}</span>
                         </div>
                         {summary.consumoMedio && (
-                          <div className="flex justify-between">
-                            <span>Consumo:</span>
-                            <span
-                              className={
-                                summary.consumoValido
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              {summary.consumoMedio} L/100km
-                            </span>
-                          </div>
+                          <>
+                            <div className="flex justify-between">
+                              <span>Consumo:</span>
+                              <span
+                                className={
+                                  summary.consumoValido
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                {summary.consumoMedio} L/100km
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Fonte:</span>
+                              <span className="text-blue-600 text-xs">
+                                {summary.fonteDados}
+                              </span>
+                            </div>
+                          </>
                         )}
                         {summary.inconsistencias.length > 0 && (
                           <div className="text-red-600 text-xs">
-                            ⚠️ {summary.inconsistencias.length} problema
+                            {summary.inconsistencias.length} problema
                             {summary.inconsistencias.length !== 1 ? "s" : ""}
                           </div>
                         )}
@@ -778,7 +812,7 @@ export default function AdminPerfil({
           return (
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-4 text-red-600">
-                ⚠️ Alertas de Gastos
+                Alertas de Gastos
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {alertas.map((alerta, index) => (
@@ -790,7 +824,7 @@ export default function AdminPerfil({
                       <div className="text-xs text-red-700">
                         {alerta.tipo === "gasto-excessivo" && (
                           <div>
-                            <p>💰 Gasto {alerta.diferenca}% acima da média</p>
+                            <p> Gasto {alerta.diferenca}% acima da média</p>
                             <p>
                               Gasto: {formatBRL(alerta.valor ?? 0)} | Média:{" "}
                               {formatBRL(alerta.media ?? 0)}
@@ -799,16 +833,14 @@ export default function AdminPerfil({
                         )}
                         {alerta.tipo === "consumo-alto" && (
                           <div>
-                            <p>
-                              ⛽ Consumo muito alto: {alerta.consumo} L/100km
-                            </p>
+                            <p>Consumo muito alto: {alerta.consumo} L/100km</p>
                             <p>Verifique se há problemas no veículo</p>
                           </div>
                         )}
                         {alerta.tipo === "muitas-inconsistencias" && (
                           <div>
                             <p>
-                              🔍 {alerta.quantidade} inconsistências detectadas
+                              {alerta.quantidade} inconsistências detectadas
                             </p>
                             <p>Revisar dados deste veículo</p>
                           </div>
@@ -845,6 +877,14 @@ export default function AdminPerfil({
                         registro
                         {grupo.entradas.length !== 1 ? "s" : ""}
                       </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        📊 Fonte: {summary.fonteDados} •
+                        {summary.qtdAbastecimentos} abastecimento
+                        {summary.qtdAbastecimentos !== 1 ? "s" : ""} •
+                        {summary.qtdRotas} rota
+                        {summary.qtdRotas !== 1 ? "s" : ""} manual
+                        {summary.qtdRotas !== 1 ? "is" : ""}
+                      </p>
                       <div className="flex flex-wrap gap-2 mt-2 text-xs">
                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
                           {summary.totalKmRodados.toLocaleString()} km rodados
@@ -858,7 +898,7 @@ export default function AdminPerfil({
                             }`}
                           >
                             {summary.consumoMedio} L/100km
-                            {!summary.consumoValido && " ⚠️"}
+                            {!summary.consumoValido && " "}
                           </span>
                         )}
                         <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">
@@ -867,7 +907,7 @@ export default function AdminPerfil({
                         {summary.inconsistencias.length > 0 && (
                           <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
                             {summary.inconsistencias.length} inconsistência
-                            {summary.inconsistencias.length !== 1 ? "s" : ""} ⚠️
+                            {summary.inconsistencias.length !== 1 ? "s" : ""}
                           </span>
                         )}
                       </div>
@@ -1010,7 +1050,7 @@ export default function AdminPerfil({
                       {summary.inconsistencias.length > 0 && (
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
                           <h4 className="text-sm font-semibold text-red-800 mb-2">
-                            ⚠️ Inconsistências Detectadas:
+                            Inconsistências Detectadas:
                           </h4>
                           <ul className="text-xs text-red-700 space-y-1">
                             {summary.inconsistencias.map(
