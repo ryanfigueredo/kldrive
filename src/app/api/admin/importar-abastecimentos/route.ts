@@ -72,6 +72,15 @@ function toDate(value: unknown): Date | null {
   return isNaN(iso.getTime()) ? null : iso;
 }
 
+// Util: normaliza código de transação (mantém apenas dígitos)
+function normalizeTxCode(value: unknown): string | null {
+  if (value == null) return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  const digits = str.replace(/\D+/g, "");
+  return digits || null;
+}
+
 type ImportSummary = {
   processed: number;
   inserted: number;
@@ -139,12 +148,22 @@ export async function POST(req: NextRequest) {
 
     // Para dedupe local: set de chave "placa|timestamp"
     const seen = new Set<string>();
+    // Dedupe local por código de transação
+    const seenTx = new Set<string>();
 
     // Começa na linha 2 assumindo cabeçalho
     for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
       const row = sheet.getRow(rowNumber);
       summary.processed++;
 
+      // Colunas do XLSX (baseado no arquivo Ticket Log):
+      // A: CODIGO TRANSACAO
+      // E: DATA TRANSACAO
+      // F: PLACA
+      // O: LITROS
+      // Q: KM ATUAL
+      // T: VALOR
+      const txCode = normalizeTxCode(row.getCell(1 /* A */).value as unknown);
       const dataTransacao = toDate(row.getCell(5 /* E */).value as unknown);
       const placa = normalizePlaca(row.getCell(6 /* F */).value as unknown);
       const litros = toFloat(row.getCell(15 /* O */).value as unknown);
@@ -165,6 +184,20 @@ export async function POST(req: NextRequest) {
           reason: "Dados obrigatórios ausentes/invalidos",
         });
         continue;
+      }
+
+      // Dedupe local por código
+      if (txCode) {
+        if (seenTx.has(txCode)) {
+          summary.duplicates++;
+          summary.details.push({
+            row: rowNumber,
+            placa,
+            reason: "Duplicado na própria planilha (mesmo CODIGO TRANSACAO)",
+          });
+          continue;
+        }
+        seenTx.add(txCode);
       }
 
       const key = `${placa}|${dataTransacao.getTime()}`;
@@ -190,9 +223,16 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Checa duplicidade já existente no BD por placa (vehicleId) + timestamp igual
+      // Checa duplicidade já existente no BD:
+      // 1) Preferência: por CODIGO TRANSACAO (armazenado em observacao como TX:<code>)
+      // 2) Fallback: pelo mesmo vehicleId e timestamp exato
       const exists = await prisma.fuelRecord.findFirst({
-        where: { vehicleId: vehicle.id, createdAt: dataTransacao },
+        where: txCode
+          ? {
+              vehicleId: vehicle.id,
+              observacao: { contains: `TX:${txCode}` },
+            }
+          : { vehicleId: vehicle.id, createdAt: dataTransacao },
         select: { id: true },
       });
       if (exists) {
@@ -200,7 +240,9 @@ export async function POST(req: NextRequest) {
         summary.details.push({
           row: rowNumber,
           placa,
-          reason: "Duplicado no banco",
+          reason: txCode
+            ? "Duplicado no banco (mesmo CODIGO TRANSACAO)"
+            : "Duplicado no banco (mesmo horário)",
         });
         continue;
       }
@@ -212,7 +254,7 @@ export async function POST(req: NextRequest) {
           kmAtual,
           situacaoTanque: "CHEIO",
           photoUrl: "",
-          observacao: "Importado XLSX",
+          observacao: txCode ? `Importado XLSX TX:${txCode}` : "Importado XLSX",
           createdAt: dataTransacao,
           user: { connect: { email: token.email! } },
           vehicle: { connect: { id: vehicle.id } },

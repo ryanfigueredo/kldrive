@@ -32,7 +32,6 @@ import {
   Tooltip,
   LabelList,
 } from "recharts";
-import { formatarMoeda } from "@/lib/utils";
 
 interface GraficoData {
   totalKm?: number;
@@ -48,6 +47,17 @@ interface GraficoData {
     qtdKmAnterior: number;
     qtdAbastecimentoAnterior: number;
   };
+}
+
+interface RotaMetrics {
+  totalKmRodados: number;
+  totalRotas: number;
+  totalUsuarios: number;
+  totalVeiculos: number;
+  kmPorVeiculo: Record<string, number>;
+  kmPorUsuario: Record<string, number>;
+  topUsuarios: Array<{ usuario: string; km: number }>;
+  topVeiculos: Array<{ placa: string; km: number }>;
 }
 
 interface RotaRecord {
@@ -87,6 +97,7 @@ export default function AdminPerfil({
   abastecimentos?: AbastecimentoRecord[];
 }) {
   const [graficoData, setGraficoData] = useState<GraficoData>({});
+  const [rotaMetrics, setRotaMetrics] = useState<RotaMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
@@ -229,24 +240,11 @@ export default function AdminPerfil({
     return gruposOrdenados;
   }, [rotasFiltradas, abastecimentosFiltrados, filtroTipo]);
 
-  // Lógica do RadialChart - Consumo por usuário
-  const consumoPorUsuario: Record<string, number> = {};
-  for (const ab of abastecimentosFiltrados) {
-    const linkedUsers = ab.vehicle?.users
-      ?.map((u) => u?.name)
-      .filter(Boolean) as string[] | undefined;
-    const usuarios =
-      linkedUsers && linkedUsers.length > 0
-        ? linkedUsers
-        : [ab.user?.name || "Desconhecido"];
-    const share = usuarios.length > 0 ? ab.valor / usuarios.length : ab.valor;
-    usuarios.forEach((nome) => {
-      consumoPorUsuario[nome] = (consumoPorUsuario[nome] ?? 0) + share;
-    });
-  }
+  // Lógica do RadialChart - KM por usuário (baseado nas rotas)
+  const kmPorUsuario = rotaMetrics?.kmPorUsuario || {};
 
-  const dadosPorUsuario = Object.entries(consumoPorUsuario)
-    .map(([usuario, valor]) => ({ usuario, valor }))
+  const dadosPorUsuario = Object.entries(kmPorUsuario)
+    .map(([usuario, km]) => ({ usuario, valor: km }))
     .sort((a, b) => b.valor - a.valor);
 
   // Dados de teste se não houver dados reais
@@ -317,22 +315,29 @@ export default function AdminPerfil({
         if (start) params.set("startDate", start);
         if (end) params.set("endDate", end);
 
-        const [registrosRes, dashboardRes] = await Promise.all([
+        const [registrosRes, dashboardRes, rotaMetricsRes] = await Promise.all([
           fetch(`/api/admin/registros`),
           fetch(
             `/api/admin/dashboard-metrics${
               params.toString() ? `?${params.toString()}` : ""
             }`
           ),
+          fetch(
+            `/api/admin/rota-metrics${
+              params.toString() ? `?${params.toString()}` : ""
+            }`
+          ),
         ]);
 
-        if (!registrosRes.ok || !dashboardRes.ok)
+        if (!registrosRes.ok || !dashboardRes.ok || !rotaMetricsRes.ok)
           throw new Error("Erro ao carregar dados.");
 
         await registrosRes.json();
         const dashboardData: GraficoData = await dashboardRes.json();
+        const rotaMetricsData: RotaMetrics = await rotaMetricsRes.json();
 
         setGraficoData(dashboardData ?? {});
+        setRotaMetrics(rotaMetricsData ?? null);
       } catch {
         setError("Erro ao carregar dados do dashboard.");
       } finally {
@@ -496,11 +501,11 @@ export default function AdminPerfil({
               <div className="h-[120px]">
                 <EstatisticaCard
                   titulo="Total KM Rodados"
-                  valor={`${graficoData.totalKm?.toLocaleString() ?? "0"} km`}
-                  valorAtual={graficoData.totalKm ?? 0}
-                  valorAnterior={
-                    graficoData.historicoComparativo?.kmAnterior ?? 0
-                  }
+                  valor={`${
+                    rotaMetrics?.totalKmRodados?.toLocaleString() ?? "0"
+                  } km`}
+                  valorAtual={rotaMetrics?.totalKmRodados ?? 0}
+                  valorAnterior={0}
                   icone={<Fuel className="h-4 w-4" />}
                   sufixo="km"
                 />
@@ -508,12 +513,10 @@ export default function AdminPerfil({
 
               <div className="h-[120px]">
                 <EstatisticaCard
-                  titulo="Registros de KM"
-                  valor={`${graficoData.totalPorTipo?.KM ?? 0}`}
-                  valorAtual={graficoData.totalPorTipo?.KM ?? 0}
-                  valorAnterior={
-                    graficoData.historicoComparativo?.qtdKmAnterior ?? 0
-                  }
+                  titulo="Total de Rotas"
+                  valor={`${rotaMetrics?.totalRotas ?? 0}`}
+                  valorAtual={rotaMetrics?.totalRotas ?? 0}
+                  valorAnterior={0}
                   icone={<Users className="h-4 w-4" />}
                 />
               </div>
@@ -521,9 +524,21 @@ export default function AdminPerfil({
           </div>
 
           <div className="lg:col-span-1 ">
-            <Card className="h-full bg-gray-500">
-              <CardContent className="">
-                <div className="h-[225px]  pt-2 w-full">
+            <Card className="h-full">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">
+                    KM por Usuário
+                  </CardTitle>
+                  {dadosPorUsuario.length === 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      Demo
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-[225px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart
                       data={dadosComCores}
@@ -546,8 +561,8 @@ export default function AdminPerfil({
                       </RadialBar>
                       <Tooltip
                         formatter={(value: number) => [
-                          formatarMoeda(value),
-                          "Valor Gasto",
+                          `${value.toLocaleString()} km`,
+                          "KM Rodados",
                         ]}
                         labelFormatter={(label: string) => `Usuário: ${label}`}
                       />
