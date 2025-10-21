@@ -145,7 +145,7 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.km - a.km)
       .slice(0, 5);
 
-    console.log(`📊 Métricas calculadas:`, {
+    console.log(`Métricas calculadas:`, {
       totalKmRodados,
       totalRotas,
       totalUsuarios,

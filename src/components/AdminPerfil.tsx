@@ -25,6 +25,7 @@ import DashboardGraficos from "./AdminGraficos";
 import { EstatisticaCard } from "./EstatisticaCard";
 import { ImageModal } from "./ImageModal";
 import { FiltroRotas } from "./FiltroRotas";
+import { CalculadoraEficiencia } from "./CalculadoraEficiencia";
 import { Session } from "next-auth";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -178,6 +179,7 @@ export default function AdminPerfil({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [editRotaOpen, setEditRotaOpen] = useState(false);
   const [rotaParaEditar, setRotaParaEditar] = useState<RotaRecord | null>(null);
+  const [calculadoraOpen, setCalculadoraOpen] = useState(false);
 
   const formatBRL = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -211,10 +213,15 @@ export default function AdminPerfil({
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    // Calcular KM rodados baseado nas ROTAS (dados manuais dos usuários)
-    // IMPORTANTE: As rotas já vêm filtradas por data do período selecionado
+    // 🎯 HIERARQUIA DE CONFIABILIDADE PARA CONTROLE PERFEITO:
+    // 1º PRIORIDADE: Rotas manuais (dados preenchidos pelo funcionário) - MAIS CONFIÁVEL
+    // 2º PRIORIDADE: Ticket Log (quando não há rotas manuais) - MENOS CONFIÁVEL
+
+    let fonteKmRodados = "Nenhuma";
+    let confiabilidadeKm = "baixa";
+
     if (rotas.length > 0) {
-      // Ordenar rotas por data para pegar primeira e última
+      // 🥇 USAR ROTAS MANUAIS (mais confiáveis - funcionário preencheu)
       const rotasOrdenadas = [...rotas].sort(
         (a, b) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -229,6 +236,21 @@ export default function AdminPerfil({
       // KM rodados = diferença entre primeira e última rota por data
       if (kmUltima > kmPrimeira) {
         totalKmRodados = kmUltima - kmPrimeira;
+        fonteKmRodados = "Rotas Manuais";
+        confiabilidadeKm = "alta";
+      }
+    } else if (abastecimentosOrdenados.length > 0) {
+      // 🥈 USAR TICKET LOG (menos confiável - frentista pode errar)
+      const kmValues = abastecimentosOrdenados
+        .map((ab) => Number(ab.kmAtual) || 0)
+        .filter((km) => km > 0);
+
+      if (kmValues.length > 0) {
+        const kmMinimo = Math.min(...kmValues);
+        const kmMaximo = Math.max(...kmValues);
+        totalKmRodados = kmMaximo - kmMinimo;
+        fonteKmRodados = "Ticket Log";
+        confiabilidadeKm = "média";
       }
     }
 
@@ -264,6 +286,14 @@ export default function AdminPerfil({
       parseFloat(consumoMedio) >= 5 &&
       parseFloat(consumoMedio) <= 20;
 
+    // Calcular indicadores de eficiência e alertas
+    const custoPorKm = totalKmRodados > 0 ? total / totalKmRodados : 0;
+    const alertaEficiencia =
+      consumoMedio && parseFloat(consumoMedio) < 8
+        ? "⚠️ Baixa eficiência"
+        : null;
+    const alertaGasto = custoPorKm > 1.0 ? "💰 Alto custo por km" : null;
+
     return {
       total,
       users: Array.from(names).join(", "),
@@ -271,7 +301,11 @@ export default function AdminPerfil({
       totalLitros,
       consumoMedio,
       consumoValido,
-      fonteDados: rotas.length > 0 ? "Rotas Manuais" : "Ticket Log",
+      fonteDados: fonteKmRodados,
+      confiabilidadeKm,
+      custoPorKm,
+      alertaEficiencia,
+      alertaGasto,
       qtdAbastecimentos: abastecimentosOrdenados.length,
       qtdRotas: rotas.length,
     };
@@ -487,6 +521,13 @@ export default function AdminPerfil({
           >
             Registrar Abastecimento (Admin)
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setCalculadoraOpen(true)}
+            className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
+          >
+            Calculadora de Eficiência
+          </Button>
         </div>
       </div>
 
@@ -693,6 +734,37 @@ export default function AdminPerfil({
                         {summary.qtdRotas !== 1 ? "s" : ""} manual
                         {summary.qtdRotas !== 1 ? "is" : ""}
                       </p>
+
+                      {/* Indicadores de Confiabilidade e Alertas */}
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${
+                            summary.confiabilidadeKm === "alta"
+                              ? "bg-green-100 text-green-800"
+                              : summary.confiabilidadeKm === "média"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {summary.confiabilidadeKm === "alta"
+                            ? "✅ Alta confiabilidade"
+                            : summary.confiabilidadeKm === "média"
+                            ? "⚠️ Média confiabilidade"
+                            : "❌ Baixa confiabilidade"}
+                        </span>
+
+                        {summary.alertaEficiencia && (
+                          <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-800">
+                            {summary.alertaEficiencia}
+                          </span>
+                        )}
+
+                        {summary.alertaGasto && (
+                          <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-800">
+                            {summary.alertaGasto}
+                          </span>
+                        )}
+                      </div>
                       {summary.qtdAbastecimentos > 0 && (
                         <div className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded">
                           <div className="grid grid-cols-3 gap-2 text-center">
@@ -744,6 +816,12 @@ export default function AdminPerfil({
                           <Droplets className="h-3 w-3" />
                           {summary.totalLitros.toFixed(2)} L total
                         </span>
+                        {summary.custoPorKm > 0 && (
+                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            R$ {summary.custoPorKm.toFixed(2)}/km
+                          </span>
+                        )}
                         {summary.qtdAbastecimentos > 0 && (
                           <>
                             <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded flex items-center gap-1">
@@ -1080,6 +1158,16 @@ export default function AdminPerfil({
               }}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Calculadora de Eficiência */}
+      <Dialog open={calculadoraOpen} onOpenChange={setCalculadoraOpen}>
+        <DialogContent className="max-w-lg bg-white text-black dark:bg-neutral-900 dark:text-white">
+          <DialogHeader>
+            <DialogTitle>Calculadora de Eficiência de Combustível</DialogTitle>
+          </DialogHeader>
+          <CalculadoraEficiencia onClose={() => setCalculadoraOpen(false)} />
         </DialogContent>
       </Dialog>
 
