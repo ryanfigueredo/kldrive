@@ -213,12 +213,11 @@ export default function AdminPerfil({
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    // 🎯 HIERARQUIA DE CONFIABILIDADE PARA CONTROLE PERFEITO:
-    // 1º PRIORIDADE: Rotas manuais (dados preenchidos pelo funcionário) - MAIS CONFIÁVEL
-    // 2º PRIORIDADE: Ticket Log (quando não há rotas manuais) - MENOS CONFIÁVEL
+    // 🎯 HIERARQUIA DE FONTE DE DADOS (não confiabilidade do funcionário):
+    // 1º PRIORIDADE: Rotas manuais (dados preenchidos pelo funcionário)
+    // 2º PRIORIDADE: Ticket Log (quando não há rotas manuais)
 
     let fonteKmRodados = "Nenhuma";
-    let confiabilidadeKm = "baixa";
 
     if (rotas.length > 0) {
       // 🥇 USAR ROTAS MANUAIS (mais confiáveis - funcionário preencheu)
@@ -237,7 +236,6 @@ export default function AdminPerfil({
       if (kmUltima > kmPrimeira) {
         totalKmRodados = kmUltima - kmPrimeira;
         fonteKmRodados = "Rotas Manuais";
-        confiabilidadeKm = "alta";
       }
     } else if (abastecimentosOrdenados.length > 0) {
       // 🥈 USAR TICKET LOG (menos confiável - frentista pode errar)
@@ -250,7 +248,6 @@ export default function AdminPerfil({
         const kmMaximo = Math.max(...kmValues);
         totalKmRodados = kmMaximo - kmMinimo;
         fonteKmRodados = "Ticket Log";
-        confiabilidadeKm = "média";
       }
     }
 
@@ -286,13 +283,15 @@ export default function AdminPerfil({
       parseFloat(consumoMedio) >= 5 &&
       parseFloat(consumoMedio) <= 20;
 
-    // Calcular indicadores de eficiência e alertas
+    // Calcular indicadores de eficiência e alertas REAIS
     const custoPorKm = totalKmRodados > 0 ? total / totalKmRodados : 0;
     const alertaEficiencia =
       consumoMedio && parseFloat(consumoMedio) < 8
         ? "⚠️ Baixa eficiência"
         : null;
     const alertaGasto = custoPorKm > 1.0 ? "💰 Alto custo por km" : null;
+    const alertaSuspeito =
+      custoPorKm > 2.0 ? "🚨 Custo muito alto - investigar!" : null;
 
     return {
       total,
@@ -302,10 +301,10 @@ export default function AdminPerfil({
       consumoMedio,
       consumoValido,
       fonteDados: fonteKmRodados,
-      confiabilidadeKm,
       custoPorKm,
       alertaEficiencia,
       alertaGasto,
+      alertaSuspeito,
       qtdAbastecimentos: abastecimentosOrdenados.length,
       qtdRotas: rotas.length,
     };
@@ -735,24 +734,8 @@ export default function AdminPerfil({
                         {summary.qtdRotas !== 1 ? "is" : ""}
                       </p>
 
-                      {/* Indicadores de Confiabilidade e Alertas */}
+                      {/* Alertas de Eficiência e Gastos */}
                       <div className="flex flex-wrap gap-1 mt-2">
-                        <span
-                          className={`text-xs px-2 py-1 rounded ${
-                            summary.confiabilidadeKm === "alta"
-                              ? "bg-green-100 text-green-800"
-                              : summary.confiabilidadeKm === "média"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {summary.confiabilidadeKm === "alta"
-                            ? "✅ Alta confiabilidade"
-                            : summary.confiabilidadeKm === "média"
-                            ? "⚠️ Média confiabilidade"
-                            : "❌ Baixa confiabilidade"}
-                        </span>
-
                         {summary.alertaEficiencia && (
                           <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-800">
                             {summary.alertaEficiencia}
@@ -762,6 +745,12 @@ export default function AdminPerfil({
                         {summary.alertaGasto && (
                           <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-800">
                             {summary.alertaGasto}
+                          </span>
+                        )}
+
+                        {summary.alertaSuspeito && (
+                          <span className="text-xs px-2 py-1 rounded bg-red-200 text-red-900 font-bold">
+                            {summary.alertaSuspeito}
                           </span>
                         )}
                       </div>
