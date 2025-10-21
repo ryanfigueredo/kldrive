@@ -286,12 +286,10 @@ export default function AdminPerfil({
     // Calcular indicadores de eficiência e alertas REAIS
     const custoPorKm = totalKmRodados > 0 ? total / totalKmRodados : 0;
     const alertaEficiencia =
-      consumoMedio && parseFloat(consumoMedio) < 8
-        ? "⚠️ Baixa eficiência"
-        : null;
-    const alertaGasto = custoPorKm > 1.0 ? "💰 Alto custo por km" : null;
+      consumoMedio && parseFloat(consumoMedio) < 8 ? "Baixa eficiência" : null;
+    const alertaGasto = custoPorKm > 1.0 ? "Alto custo por km" : null;
     const alertaSuspeito =
-      custoPorKm > 2.0 ? "🚨 Custo muito alto - investigar!" : null;
+      custoPorKm > 2.0 ? "Custo muito alto - investigar!" : null;
 
     return {
       total,
@@ -795,7 +793,13 @@ export default function AdminPerfil({
                             }`}
                           >
                             <Fuel className="h-3 w-3" />
-                            {summary.consumoMedio} L/100km
+                            {summary.totalKmRodados > 0 &&
+                            summary.totalLitros > 0
+                              ? (
+                                  summary.totalKmRodados / summary.totalLitros
+                                ).toFixed(1)
+                              : "0"}{" "}
+                            km/L
                             {!summary.consumoValido && (
                               <AlertTriangle className="h-3 w-3" />
                             )}
@@ -805,30 +809,6 @@ export default function AdminPerfil({
                           <Droplets className="h-3 w-3" />
                           {summary.totalLitros.toFixed(2)} L total
                         </span>
-                        {summary.custoPorKm > 0 && (
-                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            R$ {summary.custoPorKm.toFixed(2)}/km
-                          </span>
-                        )}
-                        {summary.qtdAbastecimentos > 0 && (
-                          <>
-                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" />
-                              R${" "}
-                              {(summary.total / summary.totalKmRodados).toFixed(
-                                2
-                              )}
-                              /km
-                            </span>
-                            <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" />
-                              R${" "}
-                              {(summary.total / summary.totalLitros).toFixed(2)}
-                              /L
-                            </span>
-                          </>
-                        )}
                       </div>
                     </div>
                     <button
