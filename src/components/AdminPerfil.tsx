@@ -193,7 +193,6 @@ export default function AdminPerfil({
     let totalKmRodados = 0;
     let totalLitros = 0;
     const names = new Set<string>();
-    const inconsistencias: string[] = [];
 
     // Separar abastecimentos (Ticket Log) e rotas (dados manuais)
     const abastecimentos = grupo.entradas.filter(
@@ -222,12 +221,6 @@ export default function AdminPerfil({
       // KM rodados = diferença entre primeiro e último abastecimento
       if (kmFinal > kmInicial) {
         totalKmRodados = kmFinal - kmInicial;
-      } else if (kmFinal < kmInicial) {
-        inconsistencias.push(
-          `KM regressiva no Ticket Log: ${kmInicial} → ${kmFinal} (${new Date(
-            ultimoAbastecimento.createdAt
-          ).toLocaleDateString("pt-BR")})`
-        );
       }
 
       // Somar valores e litros de todos os abastecimentos
@@ -237,25 +230,6 @@ export default function AdminPerfil({
         total += valor;
         totalLitros += litros;
       }
-    }
-
-    // Verificar inconsistências entre dados do Ticket Log e rotas manuais
-    if (abastecimentosOrdenados.length > 0 && rotas.length > 0) {
-      const ultimoAbastecimento =
-        abastecimentosOrdenados[abastecimentosOrdenados.length - 1];
-      const kmTicketLog = Number(ultimoAbastecimento.kmAtual) || 0;
-
-      // Verificar se as rotas manuais estão próximas da KM do Ticket Log
-      rotas.forEach((rota) => {
-        const kmRota = Number(rota.kmSaida) || 0;
-        const diferencaKm = Math.abs(kmRota - kmTicketLog);
-        if (diferencaKm > 100) {
-          // Diferença maior que 100km
-          inconsistencias.push(
-            `Diferença grande entre Ticket Log (${kmTicketLog.toLocaleString()}km) e rota manual (${kmRota.toLocaleString()}km) - ${diferencaKm.toLocaleString()}km de diferença`
-          );
-        }
-      });
     }
 
     // Processar usuários
@@ -280,26 +254,12 @@ export default function AdminPerfil({
       parseFloat(consumoMedio) >= 5 &&
       parseFloat(consumoMedio) <= 20;
 
-    if (consumoMedio && !consumoValido) {
-      inconsistencias.push(
-        `Consumo suspeito: ${consumoMedio} L/100km (baseado no Ticket Log)`
-      );
-    }
-
-    // Adicionar informação sobre fonte dos dados
-    if (abastecimentosOrdenados.length === 0) {
-      inconsistencias.push(
-        "Nenhum abastecimento do Ticket Log encontrado - dados podem ser imprecisos"
-      );
-    }
-
     return {
       total,
       users: Array.from(names).join(", "),
       totalKmRodados,
       totalLitros,
       consumoMedio,
-      inconsistencias,
       consumoValido,
       fonteDados:
         abastecimentosOrdenados.length > 0 ? "Ticket Log" : "Rotas Manuais",
@@ -793,13 +753,6 @@ export default function AdminPerfil({
                             </span>
                           </>
                         )}
-                        {summary.inconsistencias.length > 0 && (
-                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            {summary.inconsistencias.length} inconsistência
-                            {summary.inconsistencias.length !== 1 ? "s" : ""}
-                          </span>
-                        )}
                       </div>
                     </div>
                     <button
@@ -946,25 +899,6 @@ export default function AdminPerfil({
                           </div>
                         </div>
                       ))}
-
-                      {/* Seção de inconsistências */}
-                      {summary.inconsistencias.length > 0 && (
-                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                          <h4 className="text-sm font-semibold text-red-800 mb-2">
-                            Inconsistências Detectadas:
-                          </h4>
-                          <ul className="text-xs text-red-700 space-y-1">
-                            {summary.inconsistencias.map(
-                              (inconsistencia, index) => (
-                                <li key={index} className="flex items-start">
-                                  <span className="mr-2">•</span>
-                                  <span>{inconsistencia}</span>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
-                      )}
                     </CardContent>
                   )}
                 </Card>
