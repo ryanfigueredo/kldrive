@@ -17,6 +17,7 @@ import {
   Route,
   AlertTriangle,
   TrendingUp,
+  Edit3,
 } from "lucide-react";
 import { ListaUsuariosCadastrados } from "./ListaUsuariosCadastrados";
 import { ListaVeiculosCadastrados } from "./ListaVeiculosCadastrados";
@@ -179,6 +180,11 @@ export default function AdminPerfil({
   const formatBRL = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  const handleEditRota = (rota: RotaRecord) => {
+    // TODO: Implementar edição de rota
+    console.log("Editar rota:", rota);
+  };
+
   const getGroupSummary = (grupo: {
     placa: string;
     entradas: (RotaRecord | AbastecimentoRecord)[];
@@ -265,7 +271,7 @@ export default function AdminPerfil({
     // Calcular consumo médio baseado nos dados do Ticket Log
     const consumoMedio =
       totalLitros > 0 && totalKmRodados > 0
-        ? ((totalLitros / totalKmRodados) * 100).toFixed(4)
+        ? ((totalLitros / totalKmRodados) * 100).toFixed(2)
         : null;
 
     // Verificar se o consumo está dentro de um range razoável (5-20 L/100km)
@@ -775,14 +781,14 @@ export default function AdminPerfil({
                               <DollarSign className="h-3 w-3" />
                               R${" "}
                               {(summary.total / summary.totalKmRodados).toFixed(
-                                4
+                                2
                               )}
                               /km
                             </span>
                             <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded flex items-center gap-1">
                               <DollarSign className="h-3 w-3" />
                               R${" "}
-                              {(summary.total / summary.totalLitros).toFixed(4)}
+                              {(summary.total / summary.totalLitros).toFixed(2)}
                               /L
                             </span>
                           </>
@@ -876,6 +882,17 @@ export default function AdminPerfil({
                                     <Badge variant="destructive">
                                       Rota Alterada
                                     </Badge>
+                                  )}
+                                  {session?.user?.role === "ADMIN" && (
+                                    <button
+                                      onClick={() =>
+                                        handleEditRota(e as RotaRecord)
+                                      }
+                                      className="p-1 rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                                      title="Editar quilometragem"
+                                    >
+                                      <Edit3 className="h-4 w-4" />
+                                    </button>
                                   )}
                                 </div>
                               </div>
