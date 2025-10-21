@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const token = await getToken({ req });
   if (!token) {
@@ -17,6 +17,7 @@ export async function PATCH(
   }
 
   const { kmSaida } = await req.json();
+  const { id } = await params;
 
   if (!kmSaida || isNaN(Number(kmSaida))) {
     return NextResponse.json(
@@ -27,7 +28,7 @@ export async function PATCH(
 
   try {
     const rotaAtualizada = await prisma.rotaRecord.update({
-      where: { id: params.id },
+      where: { id },
       data: { kmSaida: Number(kmSaida) },
     });
 
