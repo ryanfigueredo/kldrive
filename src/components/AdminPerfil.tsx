@@ -7,7 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CriarUsuarioDialog } from "@/components/CriarUsuarioDialog";
 import { CriarVeiculoDialog } from "@/components/CriarVeiculoDialog";
 import { VincularUsuarioDialog } from "@/components/VincularUsuarioDialog";
-import { Fuel, Users, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Fuel,
+  Users,
+  ChevronDown,
+  ChevronRight,
+  DollarSign,
+  Droplets,
+  Route,
+  AlertTriangle,
+  TrendingUp,
+} from "lucide-react";
 import { ListaUsuariosCadastrados } from "./ListaUsuariosCadastrados";
 import { ListaVeiculosCadastrados } from "./ListaVeiculosCadastrados";
 import DashboardGraficos from "./AdminGraficos";
@@ -196,29 +206,30 @@ export default function AdminPerfil({
 
     // Calcular KM rodados baseado nos abastecimentos (Ticket Log)
     if (abastecimentosOrdenados.length > 0) {
-      let kmAnterior = 0;
-      let primeiroAbastecimento = true;
+      const primeiroAbastecimento = abastecimentosOrdenados[0];
+      const ultimoAbastecimento =
+        abastecimentosOrdenados[abastecimentosOrdenados.length - 1];
 
+      const kmInicial = Number(primeiroAbastecimento.kmAtual) || 0;
+      const kmFinal = Number(ultimoAbastecimento.kmAtual) || 0;
+
+      // KM rodados = diferença entre primeiro e último abastecimento
+      if (kmFinal > kmInicial) {
+        totalKmRodados = kmFinal - kmInicial;
+      } else if (kmFinal < kmInicial) {
+        inconsistencias.push(
+          `KM regressiva no Ticket Log: ${kmInicial} → ${kmFinal} (${new Date(
+            ultimoAbastecimento.createdAt
+          ).toLocaleDateString("pt-BR")})`
+        );
+      }
+
+      // Somar valores e litros de todos os abastecimentos
       for (const abastecimento of abastecimentosOrdenados) {
-        total += abastecimento.valor ?? 0;
-        totalLitros += abastecimento.litros ?? 0;
-
-        if (primeiroAbastecimento) {
-          kmAnterior = abastecimento.kmAtual ?? 0;
-          primeiroAbastecimento = false;
-        } else {
-          const kmAtual = abastecimento.kmAtual ?? 0;
-          if (kmAtual > kmAnterior) {
-            totalKmRodados += kmAtual - kmAnterior;
-          } else if (kmAtual < kmAnterior) {
-            inconsistencias.push(
-              `KM regressiva no Ticket Log: ${kmAnterior} → ${kmAtual} (${new Date(
-                abastecimento.createdAt
-              ).toLocaleDateString("pt-BR")})`
-            );
-          }
-          kmAnterior = kmAtual;
-        }
+        const valor = Number(abastecimento.valor) || 0;
+        const litros = Number(abastecimento.litros) || 0;
+        total += valor;
+        totalLitros += litros;
       }
     }
 
@@ -226,15 +237,16 @@ export default function AdminPerfil({
     if (abastecimentosOrdenados.length > 0 && rotas.length > 0) {
       const ultimoAbastecimento =
         abastecimentosOrdenados[abastecimentosOrdenados.length - 1];
-      const kmTicketLog = ultimoAbastecimento.kmAtual ?? 0;
+      const kmTicketLog = Number(ultimoAbastecimento.kmAtual) || 0;
 
       // Verificar se as rotas manuais estão próximas da KM do Ticket Log
       rotas.forEach((rota) => {
-        const diferencaKm = Math.abs((rota.kmSaida ?? 0) - kmTicketLog);
+        const kmRota = Number(rota.kmSaida) || 0;
+        const diferencaKm = Math.abs(kmRota - kmTicketLog);
         if (diferencaKm > 100) {
           // Diferença maior que 100km
           inconsistencias.push(
-            `Diferença grande entre Ticket Log (${kmTicketLog}km) e rota manual (${rota.kmSaida}km) - ${diferencaKm}km de diferença`
+            `Diferença grande entre Ticket Log (${kmTicketLog.toLocaleString()}km) e rota manual (${kmRota.toLocaleString()}km) - ${diferencaKm.toLocaleString()}km de diferença`
           );
         }
       });
@@ -253,7 +265,7 @@ export default function AdminPerfil({
     // Calcular consumo médio baseado nos dados do Ticket Log
     const consumoMedio =
       totalLitros > 0 && totalKmRodados > 0
-        ? ((totalLitros / totalKmRodados) * 100).toFixed(2)
+        ? ((totalLitros / totalKmRodados) * 100).toFixed(4)
         : null;
 
     // Verificar se o consumo está dentro de um range razoável (5-20 L/100km)
@@ -271,7 +283,7 @@ export default function AdminPerfil({
     // Adicionar informação sobre fonte dos dados
     if (abastecimentosOrdenados.length === 0) {
       inconsistencias.push(
-        " Nenhum abastecimento do Ticket Log encontrado - dados podem ser imprecisos"
+        "Nenhum abastecimento do Ticket Log encontrado - dados podem ser imprecisos"
       );
     }
 
@@ -674,186 +686,6 @@ export default function AdminPerfil({
           </div>
         </div>
 
-        {/* Análise de Custos de Combustível */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4">
-            Análise de Custos de Combustível
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {gruposPorVeiculo
-              .sort((a, b) => {
-                const summaryA = getGroupSummary(a);
-                const summaryB = getGroupSummary(b);
-                return summaryB.total - summaryA.total;
-              })
-              .slice(0, 4)
-              .map((grupo) => {
-                const summary = getGroupSummary(grupo);
-                const custoPorKm =
-                  summary.totalKmRodados > 0
-                    ? (summary.total / summary.totalKmRodados).toFixed(2)
-                    : "0.00";
-                const custoPorLitro =
-                  summary.totalLitros > 0
-                    ? (summary.total / summary.totalLitros).toFixed(2)
-                    : "0.00";
-
-                return (
-                  <Card key={grupo.placa} className="p-4">
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-sm">{grupo.placa}</h3>
-                      <div className="text-xs space-y-1">
-                        <div className="flex justify-between">
-                          <span>Total Gasto:</span>
-                          <span className="font-semibold text-red-600">
-                            {formatBRL(summary.total)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>KM Rodados:</span>
-                          <span>{summary.totalKmRodados.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Custo/KM:</span>
-                          <span className="font-semibold">R$ {custoPorKm}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Custo/Litro:</span>
-                          <span>R$ {custoPorLitro}</span>
-                        </div>
-                        {summary.consumoMedio && (
-                          <>
-                            <div className="flex justify-between">
-                              <span>Consumo:</span>
-                              <span
-                                className={
-                                  summary.consumoValido
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }
-                              >
-                                {summary.consumoMedio} L/100km
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Fonte:</span>
-                              <span className="text-blue-600 text-xs">
-                                {summary.fonteDados}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                        {summary.inconsistencias.length > 0 && (
-                          <div className="text-red-600 text-xs">
-                            {summary.inconsistencias.length} problema
-                            {summary.inconsistencias.length !== 1 ? "s" : ""}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-          </div>
-        </div>
-
-        {/* Alertas de Gastos Excessivos */}
-        {(() => {
-          const alertas: Array<{
-            tipo: "gasto-excessivo" | "consumo-alto" | "muitas-inconsistencias";
-            placa: string;
-            valor?: number;
-            media?: number;
-            diferenca?: string;
-            consumo?: string;
-            quantidade?: number;
-          }> = [];
-          const totalGeral = gruposPorVeiculo.reduce(
-            (acc, g) => acc + getGroupSummary(g).total,
-            0
-          );
-          const mediaGasto = totalGeral / gruposPorVeiculo.length;
-
-          gruposPorVeiculo.forEach((grupo) => {
-            const summary = getGroupSummary(grupo);
-
-            // Alerta para gastos muito acima da média
-            if (summary.total > mediaGasto * 1.5) {
-              alertas.push({
-                tipo: "gasto-excessivo",
-                placa: grupo.placa,
-                valor: summary.total,
-                media: mediaGasto,
-                diferenca: ((summary.total / mediaGasto - 1) * 100).toFixed(1),
-              });
-            }
-
-            // Alerta para consumo muito alto
-            if (summary.consumoMedio && parseFloat(summary.consumoMedio) > 15) {
-              alertas.push({
-                tipo: "consumo-alto",
-                placa: grupo.placa,
-                consumo: summary.consumoMedio,
-              });
-            }
-
-            // Alerta para muitas inconsistências
-            if (summary.inconsistencias.length > 2) {
-              alertas.push({
-                tipo: "muitas-inconsistencias",
-                placa: grupo.placa,
-                quantidade: summary.inconsistencias.length,
-              });
-            }
-          });
-
-          if (alertas.length === 0) return null;
-
-          return (
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-4 text-red-600">
-                Alertas de Gastos
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {alertas.map((alerta, index) => (
-                  <Card key={index} className="p-4 border-red-200 bg-red-50">
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-sm text-red-800">
-                        {alerta.placa}
-                      </h3>
-                      <div className="text-xs text-red-700">
-                        {alerta.tipo === "gasto-excessivo" && (
-                          <div>
-                            <p> Gasto {alerta.diferenca}% acima da média</p>
-                            <p>
-                              Gasto: {formatBRL(alerta.valor ?? 0)} | Média:{" "}
-                              {formatBRL(alerta.media ?? 0)}
-                            </p>
-                          </div>
-                        )}
-                        {alerta.tipo === "consumo-alto" && (
-                          <div>
-                            <p>Consumo muito alto: {alerta.consumo} L/100km</p>
-                            <p>Verifique se há problemas no veículo</p>
-                          </div>
-                        )}
-                        {alerta.tipo === "muitas-inconsistencias" && (
-                          <div>
-                            <p>
-                              {alerta.quantidade} inconsistências detectadas
-                            </p>
-                            <p>Revisar dados deste veículo</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
         {/* Grid de colunas por veículo */}
         {gruposPorVeiculo.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-8">
@@ -877,35 +709,87 @@ export default function AdminPerfil({
                         registro
                         {grupo.entradas.length !== 1 ? "s" : ""}
                       </p>
-                      <p className="text-xs text-blue-600 mt-1">
-                        📊 Fonte: {summary.fonteDados} •
-                        {summary.qtdAbastecimentos} abastecimento
+                      <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        Fonte: {summary.fonteDados} •{summary.qtdAbastecimentos}{" "}
+                        abastecimento
                         {summary.qtdAbastecimentos !== 1 ? "s" : ""} •
                         {summary.qtdRotas} rota
                         {summary.qtdRotas !== 1 ? "s" : ""} manual
                         {summary.qtdRotas !== 1 ? "is" : ""}
                       </p>
+                      {summary.qtdAbastecimentos > 0 && (
+                        <div className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded">
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                              <div className="font-semibold text-green-600 flex items-center justify-center gap-1">
+                                <DollarSign className="h-3 w-3" />
+                                {formatBRL(summary.total)}
+                              </div>
+                              <div className="text-xs">Total Gasto</div>
+                            </div>
+                            <div>
+                              <div className="font-semibold text-blue-600 flex items-center justify-center gap-1">
+                                <Droplets className="h-3 w-3" />
+                                {summary.totalLitros.toFixed(2)}L
+                              </div>
+                              <div className="text-xs">Litros</div>
+                            </div>
+                            <div>
+                              <div className="font-semibold text-purple-600 flex items-center justify-center gap-1">
+                                <Route className="h-3 w-3" />
+                                {summary.totalKmRodados.toFixed(0)}km
+                              </div>
+                              <div className="text-xs">KM Rodados</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2 mt-2 text-xs">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center gap-1">
+                          <Route className="h-3 w-3" />
                           {summary.totalKmRodados.toLocaleString()} km rodados
                         </span>
                         {summary.consumoMedio && (
                           <span
-                            className={`px-2 py-1 rounded ${
+                            className={`px-2 py-1 rounded flex items-center gap-1 ${
                               summary.consumoValido
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
+                            <Fuel className="h-3 w-3" />
                             {summary.consumoMedio} L/100km
-                            {!summary.consumoValido && " "}
+                            {!summary.consumoValido && (
+                              <AlertTriangle className="h-3 w-3" />
+                            )}
                           </span>
                         )}
-                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                          {summary.totalLitros.toFixed(1)} L total
+                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded flex items-center gap-1">
+                          <Droplets className="h-3 w-3" />
+                          {summary.totalLitros.toFixed(2)} L total
                         </span>
+                        {summary.qtdAbastecimentos > 0 && (
+                          <>
+                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              R${" "}
+                              {(summary.total / summary.totalKmRodados).toFixed(
+                                4
+                              )}
+                              /km
+                            </span>
+                            <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              R${" "}
+                              {(summary.total / summary.totalLitros).toFixed(4)}
+                              /L
+                            </span>
+                          </>
+                        )}
                         {summary.inconsistencias.length > 0 && (
-                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
+                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
                             {summary.inconsistencias.length} inconsistência
                             {summary.inconsistencias.length !== 1 ? "s" : ""}
                           </span>
