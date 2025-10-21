@@ -176,13 +176,15 @@ export default function AdminPerfil({
   }, [rotas, abastecimentos, filtroDataInicio, filtroDataFim]);
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [editRotaOpen, setEditRotaOpen] = useState(false);
+  const [rotaParaEditar, setRotaParaEditar] = useState<RotaRecord | null>(null);
 
   const formatBRL = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const handleEditRota = (rota: RotaRecord) => {
-    // TODO: Implementar edição de rota
-    console.log("Editar rota:", rota);
+    setRotaParaEditar(rota);
+    setEditRotaOpen(true);
   };
 
   const getGroupSummary = (grupo: {
@@ -209,21 +211,29 @@ export default function AdminPerfil({
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    // Calcular KM rodados baseado nos abastecimentos (Ticket Log)
-    if (abastecimentosOrdenados.length > 0) {
-      const primeiroAbastecimento = abastecimentosOrdenados[0];
-      const ultimoAbastecimento =
-        abastecimentosOrdenados[abastecimentosOrdenados.length - 1];
+    // Calcular KM rodados baseado nas ROTAS (dados manuais dos usuários)
+    // IMPORTANTE: As rotas já vêm filtradas por data do período selecionado
+    if (rotas.length > 0) {
+      // Ordenar rotas por data para pegar primeira e última
+      const rotasOrdenadas = [...rotas].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
 
-      const kmInicial = Number(primeiroAbastecimento.kmAtual) || 0;
-      const kmFinal = Number(ultimoAbastecimento.kmAtual) || 0;
+      const primeiraRota = rotasOrdenadas[0];
+      const ultimaRota = rotasOrdenadas[rotasOrdenadas.length - 1];
 
-      // KM rodados = diferença entre primeiro e último abastecimento
-      if (kmFinal > kmInicial) {
-        totalKmRodados = kmFinal - kmInicial;
+      const kmPrimeira = Number(primeiraRota.kmSaida) || 0;
+      const kmUltima = Number(ultimaRota.kmSaida) || 0;
+
+      // KM rodados = diferença entre primeira e última rota por data
+      if (kmUltima > kmPrimeira) {
+        totalKmRodados = kmUltima - kmPrimeira;
       }
+    }
 
-      // Somar valores e litros de todos os abastecimentos
+    // Somar valores e litros de todos os abastecimentos (Ticket Log)
+    if (abastecimentosOrdenados.length > 0) {
       for (const abastecimento of abastecimentosOrdenados) {
         const valor = Number(abastecimento.valor) || 0;
         const litros = Number(abastecimento.litros) || 0;
@@ -261,8 +271,7 @@ export default function AdminPerfil({
       totalLitros,
       consumoMedio,
       consumoValido,
-      fonteDados:
-        abastecimentosOrdenados.length > 0 ? "Ticket Log" : "Rotas Manuais",
+      fonteDados: rotas.length > 0 ? "Rotas Manuais" : "Ticket Log",
       qtdAbastecimentos: abastecimentosOrdenados.length,
       qtdRotas: rotas.length,
     };
@@ -1056,6 +1065,24 @@ export default function AdminPerfil({
         </DialogContent>
       </Dialog>
 
+      {/* Dialog Editar Rota */}
+      <Dialog open={editRotaOpen} onOpenChange={setEditRotaOpen}>
+        <DialogContent className="max-w-md bg-white text-black dark:bg-neutral-900 dark:text-white">
+          <DialogHeader>
+            <DialogTitle>Editar Quilometragem da Rota</DialogTitle>
+          </DialogHeader>
+          {rotaParaEditar && (
+            <EditRotaForm
+              rota={rotaParaEditar}
+              onClose={() => {
+                setEditRotaOpen(false);
+                setRotaParaEditar(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="flex py-8 gap-8">
         <div className="items-start grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
           <ListaUsuariosCadastrados />
@@ -1172,6 +1199,83 @@ function ManualForm({ onClose }: { onClose: () => void }) {
         value={observacao}
         onChange={(e) => setObservacao(e.target.value)}
       />
+      <div className="flex justify-end gap-2 mt-1">
+        <Button variant="outline" onClick={onClose} disabled={saving}>
+          Cancelar
+        </Button>
+        <Button onClick={submit} disabled={saving}>
+          {saving ? "Salvando..." : "Salvar"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function EditRotaForm({
+  rota,
+  onClose,
+}: {
+  rota: RotaRecord;
+  onClose: () => void;
+}) {
+  const [kmSaida, setKmSaida] = useState<string>(rota.kmSaida.toString());
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!kmSaida || isNaN(Number(kmSaida))) {
+      alert("Digite uma quilometragem válida.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/rotas/${rota.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kmSaida: Number(kmSaida),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(`Erro: ${err.error ?? res.status}`);
+        setSaving(false);
+        return;
+      }
+
+      onClose();
+      window.location.reload();
+    } catch {
+      alert("Erro ao salvar");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="text-sm text-gray-600">
+        <p>
+          <strong>Veículo:</strong> {rota.vehicle?.placa ?? "-"}
+        </p>
+        <p>
+          <strong>Rota:</strong> {rota.partida} → {rota.destino}
+        </p>
+        <p>
+          <strong>Data:</strong>{" "}
+          {new Date(rota.createdAt).toLocaleString("pt-BR")}
+        </p>
+      </div>
+
+      <label className="text-sm font-medium">Quilometragem de Saída (km)</label>
+      <input
+        className="border rounded p-2 text-black"
+        placeholder="Ex: 138913"
+        type="number"
+        value={kmSaida}
+        onChange={(e) => setKmSaida(e.target.value)}
+      />
+
       <div className="flex justify-end gap-2 mt-1">
         <Button variant="outline" onClick={onClose} disabled={saving}>
           Cancelar
