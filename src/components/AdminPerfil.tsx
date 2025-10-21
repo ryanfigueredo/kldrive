@@ -285,11 +285,18 @@ export default function AdminPerfil({
 
     // Calcular indicadores de eficiência e alertas REAIS
     const custoPorKm = totalKmRodados > 0 ? total / totalKmRodados : 0;
-    const alertaEficiencia =
-      consumoMedio && parseFloat(consumoMedio) < 8 ? "Baixa eficiência" : null;
     const alertaGasto = custoPorKm > 1.0 ? "Alto custo por km" : null;
     const alertaSuspeito =
       custoPorKm > 2.0 ? "Custo muito alto - investigar!" : null;
+
+    // Aviso específico para Joabe Soares sobre erro no Ticket Log
+    const avisoTicketLog = Array.from(names).some(
+      (name) =>
+        name.toLowerCase().includes("joabe") ||
+        name.toLowerCase().includes("soares")
+    )
+      ? "⚠️ Média de KM incorreta - erro no Ticket Log"
+      : null;
 
     return {
       total,
@@ -300,9 +307,9 @@ export default function AdminPerfil({
       consumoValido,
       fonteDados: fonteKmRodados,
       custoPorKm,
-      alertaEficiencia,
       alertaGasto,
       alertaSuspeito,
+      avisoTicketLog,
       qtdAbastecimentos: abastecimentosOrdenados.length,
       qtdRotas: rotas.length,
     };
@@ -732,11 +739,11 @@ export default function AdminPerfil({
                         {summary.qtdRotas !== 1 ? "is" : ""}
                       </p>
 
-                      {/* Alertas de Eficiência e Gastos */}
+                      {/* Alertas de Gastos e Avisos Específicos */}
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {summary.alertaEficiencia && (
-                          <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-800">
-                            {summary.alertaEficiencia}
+                        {summary.avisoTicketLog && (
+                          <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                            {summary.avisoTicketLog}
                           </span>
                         )}
 
