@@ -6,7 +6,15 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Pencil, Trash2 } from "lucide-react";
 import { EditarVinculoDialog } from "./EditarVinculoDialog";
 
 interface UsuarioComVeiculo {
@@ -27,6 +35,8 @@ export function ListaUsuariosCadastrados() {
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<string | null>(
     null
   );
+  const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<UsuarioComVeiculo | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   useEffect(() => {
     const carregarUsuarios = async () => {
@@ -38,13 +48,56 @@ export function ListaUsuariosCadastrados() {
   }, []);
 
   const usuariosFiltrados = usuarios.filter(
-    (u) =>
-      u.name.toLowerCase().includes(busca.toLowerCase()) ||
-      u.email.toLowerCase().includes(busca.toLowerCase())
+    (u) => {
+      // Remove Joabe e Antonio da lista
+      const emailsParaRemover = [
+        "joabe.soares@klfacilities.com.br",
+        "antonio.carvalho@klfacilities.com.br"
+      ];
+      if (emailsParaRemover.includes(u.email.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro de busca
+      return (
+        u.name.toLowerCase().includes(busca.toLowerCase()) ||
+        u.email.toLowerCase().includes(busca.toLowerCase())
+      );
+    }
   );
 
   const abrirModalEdicao = (usuarioId: string) => {
     setUsuarioSelecionado(usuarioId);
+  };
+
+  const confirmarExclusao = (usuario: UsuarioComVeiculo) => {
+    setUsuarioParaExcluir(usuario);
+  };
+
+  const excluirUsuario = async () => {
+    if (!usuarioParaExcluir) return;
+
+    setExcluindo(true);
+    try {
+      const res = await fetch(`/api/admin/usuarios/${usuarioParaExcluir.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || "Erro ao excluir usuário");
+        return;
+      }
+
+      // Remove o usuário da lista local
+      setUsuarios((prev) => prev.filter((u) => u.id !== usuarioParaExcluir.id));
+      setUsuarioParaExcluir(null);
+    } catch (error) {
+      console.error("Erro ao excluir usuário:", error);
+      alert("Erro ao excluir usuário");
+    } finally {
+      setExcluindo(false);
+    }
   };
 
   return (
@@ -83,6 +136,14 @@ export function ListaUsuariosCadastrados() {
                 >
                   <Pencil className="h-3 w-3 mr-1" /> Editar
                 </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="text-xs"
+                  onClick={() => confirmarExclusao(u)}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                </Button>
                 {usuarioSelecionado === u.id && (
                   <EditarVinculoDialog
                     userId={usuarioSelecionado}
@@ -96,6 +157,35 @@ export function ListaUsuariosCadastrados() {
           ))}
         </CardContent>
       </ScrollArea>
+
+      <Dialog open={!!usuarioParaExcluir} onOpenChange={(open) => !open && setUsuarioParaExcluir(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o usuário{" "}
+              <strong>{usuarioParaExcluir?.name}</strong>? Esta ação não pode
+              ser desfeita e todos os registros relacionados serão removidos.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setUsuarioParaExcluir(null)}
+              disabled={excluindo}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={excluirUsuario}
+              disabled={excluindo}
+            >
+              {excluindo ? "Excluindo..." : "Excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
